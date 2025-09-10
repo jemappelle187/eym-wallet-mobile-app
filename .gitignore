@@ -34,4 +34,18 @@ yarn-error.*
 .env*.local
 
 # typescript
-*.tsbuildinfo 
+*.tsbuildinfo .env
+
+# Backend API (should be in separate repository)
+auto-convert-api/
+# Secrets
+.env
+.env.*
+# iOS Pods
+ios/Pods/
+
+# Secrets
+.env
+.env.*
+# iOS Pods
+ios/Pods/

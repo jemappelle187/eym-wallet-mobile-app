@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Alert,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,16 +52,36 @@ const MOCK_RECENT_RECIPIENTS = [
 
 const QuickSendModal = () => {
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors = Colors } = useTheme();
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+
+  // Available currencies
+  const availableCurrencies = [
+    { symbol: '₵', code: 'GHS', name: 'Ghanaian Cedi', country: 'Ghana' },
+    { symbol: '$', code: 'USD', name: 'US Dollar', country: 'United States' },
+    { symbol: '€', code: 'EUR', name: 'Euro', country: 'European Union' },
+    { symbol: '£', code: 'GBP', name: 'British Pound', country: 'United Kingdom' },
+    { symbol: '¥', code: 'JPY', name: 'Japanese Yen', country: 'Japan' },
+    { symbol: '₹', code: 'INR', name: 'Indian Rupee', country: 'India' },
+    { symbol: '₦', code: 'NGN', name: 'Nigerian Naira', country: 'Nigeria' },
+    { symbol: '₩', code: 'KRW', name: 'South Korean Won', country: 'South Korea' },
+  ];
+
+  const [selectedCurrency, setSelectedCurrency] = useState(availableCurrencies[0]); // Default to GHS
 
   const quickAmounts = [100, 500, 1000, 2000];
 
   const handleQuickAmount = (quickAmount) => {
     setAmount(quickAmount.toString());
+  };
+
+  const handleCurrencySelect = (currency) => {
+    setSelectedCurrency(currency);
+    setShowCurrencyModal(false);
   };
 
   const handleSend = async () => {
@@ -80,10 +101,10 @@ const QuickSendModal = () => {
     
     navigation.navigate('TransactionSuccess', {
       transactionData: {
-        sendAmount: `₵${amount}`,
-        receiveAmount: `₵${amount}`,
-        sendCurrency: 'GHS',
-        receiveCurrency: 'GHS',
+        sendAmount: `${selectedCurrency.symbol}${amount}`,
+        receiveAmount: `${selectedCurrency.symbol}${amount}`,
+        sendCurrency: selectedCurrency.code,
+        receiveCurrency: selectedCurrency.code,
         recipientName: selectedRecipient.name,
         deliveryTime: '2-5 minutes',
       }
@@ -131,8 +152,6 @@ const QuickSendModal = () => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back-outline" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.modalHeaderTitle, { color: colors.text }]}>Quick Send</Text>
-          <View style={{ width: 28 }} />
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -152,16 +171,33 @@ const QuickSendModal = () => {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Amount</Text>
             
+            {/* Currency Selector */}
+            <TouchableOpacity
+              style={[styles.currencySelector, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => setShowCurrencyModal(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.currencyInfo}>
+                <Text style={[styles.currencyCode, { color: colors.text }]}>{selectedCurrency.code}</Text>
+                <Text style={[styles.currencyCountry, { color: colors.textMuted }]}>{selectedCurrency.country}</Text>
+              </View>
+              <Text style={[styles.currencySymbol, { color: colors.text }]}>{selectedCurrency.symbol}</Text>
+              <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+            
             {/* Amount Input */}
             <View style={[styles.amountInputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Text style={[styles.currencySymbol, { color: colors.textMuted }]}>₵</Text>
               <TextInput
-                style={[styles.amountInput, { color: colors.text }]}
-                placeholder="0.00"
+                style={[styles.amountInput, { color: colors.text, textAlign: 'center' }]}
+                placeholder={`${selectedCurrency?.symbol || '$'} 0.00`}
                 placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
+                value={amount ? `${selectedCurrency?.symbol || '$'} ${amount}` : ''}
+                onChangeText={text => {
+                  // Remove symbol and spaces, allow only numbers and dot
+                  const clean = text.replace(selectedCurrency?.symbol || '$', '').replace(/\s/g, '').replace(/[^0-9.]/g, '');
+                  setAmount(clean);
+                }}
                 fontSize={24}
                 fontWeight="600"
               />
@@ -177,7 +213,7 @@ const QuickSendModal = () => {
                     style={[styles.quickAmountButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                     onPress={() => handleQuickAmount(quickAmount)}
                   >
-                    <Text style={[styles.quickAmountText, { color: colors.text }]}>₵{quickAmount.toLocaleString()}</Text>
+                    <Text style={[styles.quickAmountText, { color: colors.text }]}>{selectedCurrency?.symbol || '$'}{quickAmount.toLocaleString()}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -208,17 +244,17 @@ const QuickSendModal = () => {
               </View>
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Amount:</Text>
-                <Text style={[styles.summaryValue, { color: colors.primary, fontWeight: '600' }]}>₵{parseFloat(amount).toLocaleString()}</Text>
+                <Text style={[styles.summaryValue, { color: colors.primary, fontWeight: '600' }]}>{selectedCurrency?.symbol || '$'}{parseFloat(amount).toLocaleString()}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Fee:</Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>₵{(parseFloat(amount) * 0.005).toFixed(2)}</Text>
+                <Text style={[styles.summaryValue, { color: colors.text }]}>{selectedCurrency?.symbol || '$'}{(parseFloat(amount) * 0.005).toFixed(2)}</Text>
               </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: colors.text, fontWeight: '600' }]}>Total:</Text>
                 <Text style={[styles.summaryValue, { color: colors.primary, fontWeight: '700' }]}>
-                  ₵{(parseFloat(amount) * 1.005).toFixed(2)}
+                  {selectedCurrency?.symbol || '$'}{(parseFloat(amount) * 1.005).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -244,6 +280,48 @@ const QuickSendModal = () => {
             </>
           )}
         </TouchableOpacity>
+
+        {/* Currency Selection Modal */}
+        <Modal
+          visible={showCurrencyModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowCurrencyModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.currencyModal, { backgroundColor: colors.cardBackground }]}>
+              <View style={styles.currencyModalHeader}>
+                <Text style={[styles.currencyModalTitle, { color: colors.text }]}>Select Currency</Text>
+                <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                  <Ionicons name="close" size={24} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.currencyList} showsVerticalScrollIndicator={false}>
+                {availableCurrencies.map((currency) => (
+                  <TouchableOpacity
+                    key={currency.code}
+                    style={[
+                      styles.currencyOption,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      selectedCurrency.code === currency.code && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }
+                    ]}
+                    onPress={() => handleCurrencySelect(currency)}
+                  >
+                    <View style={styles.currencyOptionInfo}>
+                      <Text style={[styles.currencyOptionCode, { color: colors.text }]}>{currency.code}</Text>
+                      <Text style={[styles.currencyOptionName, { color: colors.textMuted }]}>{currency.name}</Text>
+                    </View>
+                    <Text style={[styles.currencyOptionSymbol, { color: colors.text }]}>{currency.symbol}</Text>
+                    {selectedCurrency.code === currency.code && (
+                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -258,31 +336,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 0,
     backgroundColor: 'transparent',
   },
   backButton: {
     marginRight: 8,
   },
-  modalHeaderTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 0,
-    marginTop: 0,
-    flex: 1,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
     ...Typography.bodySmall,
-    marginBottom: 12,
+    marginBottom: 6,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -290,10 +360,10 @@ const styles = StyleSheet.create({
   recipientItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    marginBottom: 8,
+    marginBottom: 4,
     shadowColor: Colors.shadowLight,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -301,12 +371,12 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
     position: 'relative',
   },
   avatarText: {
@@ -342,11 +412,11 @@ const styles = StyleSheet.create({
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   currencySymbol: {
     fontSize: 24,
@@ -359,11 +429,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   quickAmountsContainer: {
-    marginTop: 8,
+    marginTop: 4,
   },
   quickAmountsLabel: {
     ...Typography.bodySmall,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   quickAmounts: {
     flexDirection: 'row',
@@ -371,8 +441,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickAmountButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
   },
@@ -381,29 +451,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   noteInput: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    minHeight: 60,
+    minHeight: 40,
     textAlignVertical: 'top',
   },
   summaryCard: {
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   summaryTitle: {
     ...Typography.h4,
-    marginBottom: 12,
+    marginBottom: 8,
     fontWeight: '600',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   summaryLabel: {
     ...Typography.bodySmall,
@@ -420,9 +490,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    marginHorizontal: 20,
-    marginBottom: 20,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    marginTop: -16,
     borderRadius: 16,
     gap: 8,
     shadowColor: Colors.shadowMedium,
@@ -434,6 +505,90 @@ const styles = StyleSheet.create({
   sendButtonText: {
     ...Typography.button,
     fontWeight: '600',
+  },
+  // Currency Selector Styles
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginBottom: 10,
+  },
+  currencyInfo: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  currencyCode: {
+    ...Typography.bodyLarge,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  currencyCountry: {
+    ...Typography.bodySmall,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  currencySymbol: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  // Currency Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  currencyModal: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  currencyModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  currencyModalTitle: {
+    ...Typography.h4,
+    fontWeight: '600',
+  },
+  currencyList: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  currencyOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  currencyOptionInfo: {
+    flex: 1,
+  },
+  currencyOptionCode: {
+    ...Typography.bodyLarge,
+    fontWeight: '600',
+  },
+  currencyOptionName: {
+    ...Typography.bodySmall,
+    marginTop: 2,
+  },
+  currencyOptionSymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
   },
 });
 

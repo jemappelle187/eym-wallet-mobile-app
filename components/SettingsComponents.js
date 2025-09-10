@@ -464,10 +464,19 @@ const styles = StyleSheet.create({
   },
 });
 
-export default {
-  ProfileSection,
-  SecuritySettings,
-  PreferencesSettings,
-  AccountActions,
-  SettingsScreen,
-}; 
+// Main SettingsComponents component
+export const SettingsComponents = ({ visible, onClose, colors }) => {
+  if (!visible) return null;
+  
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <SettingsScreen 
+        user={{ fullName: 'John Doe', email: 'john@example.com', phone: '+233 XX XXX XXXX' }}
+        onLogout={() => onClose?.()}
+        onEditProfile={() => onClose?.()}
+      />
+    </View>
+  );
+};
+
+export default SettingsComponents; 

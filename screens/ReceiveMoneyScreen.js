@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard'; // For copying to clipboard
+import { copyWithAutoClear } from '../utils/ClipboardUtils';
 
 const ReceiveMoneyScreen = ({ navigation }) => {
   // Mock user account details
@@ -13,7 +14,9 @@ const ReceiveMoneyScreen = ({ navigation }) => {
   };
 
   const copyToClipboard = async (text) => {
-    await Clipboard.setStringAsync(text);
+    await copyWithAutoClear(text, 30000, () => {
+      Alert.alert('Clipboard Cleared', 'Sensitive data has been removed from your clipboard for your security.');
+    });
     Alert.alert('Copied!', `${text} has been copied to your clipboard.`);
   };
 

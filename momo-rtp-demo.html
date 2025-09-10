@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MoMo RTP Demo</title>
+  <style>
+    :root { --bg:#0b0b0b; --card:#141414; --text:#e5e7eb; --muted:#9ca3af; --blue:#1e40af; --blue2:#3155c7; --green:#10b981; --red:#ef4444; --border:#2a2a2a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; align-items:center; justify-content:center; }
+    .card { width:100%; max-width:520px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin:0 0 6px; font-size:20px; }
+    p.sub { margin:0 0 18px; color:var(--muted); font-size:14px; }
+    label { display:block; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+    input { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background:#0f0f0f; color:var(--text); outline:none; }
+    .row { display:flex; gap:12px; }
+    .row > div { flex:1; }
+    .cta { margin-top:18px; display:flex; gap:10px; }
+    button { appearance:none; border:none; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer; }
+    .primary { background:linear-gradient(180deg, var(--blue), var(--blue2)); color:white; min-width:180px; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+    .secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .primary[disabled] { opacity:.6; cursor:not-allowed; }
+    .muted { color:var(--muted); font-size:12px; margin-top:8px; }
+    .steps { display:flex; gap:8px; margin:18px 0 8px; }
+    .step { flex:1; height:6px; background:#1a1a1a; border-radius:999px; overflow:hidden; border:1px solid var(--border); }
+    .step > span { display:block; width:0%; height:100%; background:var(--blue2); transition:width .35s ease; }
+    .log { background:#0f0f0f; border:1px solid var(--border); border-radius:10px; padding:12px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; max-height:180px; overflow:auto; }
+    .ok { color:var(--green); }
+    .err { color:var(--red); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>MTN Mobile Money · Request to Pay</h1>
+    <p class="sub">Sandbox uses EUR under the hood. Use a Ghana MSISDN (E.164 without +, e.g. 23324xxxxxxx). ETA ≈ 45s.</p>
+
+    <div class="row">
+      <div>
+        <label>Amount (EUR)</label>
+        <input id="amt" inputmode="decimal" placeholder="10.00" value="10.00" />
+      </div>
+      <div>
+        <label>MSISDN (233...) </label>
+        <input id="msisdn" placeholder="233241234567" value="233241234567" />
+      </div>
+    </div>
+
+    <div class="cta">
+      <button id="send" class="primary">
+        <span id="spin" hidden>⏳</span>
+        <span id="ctat">Confirm and send</span>
+      </button>
+      <button id="cancel" class="secondary">Cancel</button>
+    </div>
+    <div class="muted">We’ll initiate RTP (EUR) and poll status via your backend.</div>
+
+    <div class="steps">
+      <div class="step"><span id="s1"></span></div>
+      <div class="step"><span id="s2"></span></div>
+      <div class="step"><span id="s3"></span></div>
+    </div>
+    <div id="msg" class="muted"></div>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script>
+    const apiBase = location.origin.replace(/\/$/, '') + '/v1/momo';
+    const $ = (id) => document.getElementById(id);
+    const log = (m, cls='') => { const el=document.createElement('div'); if(cls) el.className=cls; el.textContent=m; $('log').appendChild(el); $('log').scrollTop = $('log').scrollHeight; };
+    const step = (i, pct) => $('s'+i).style.width = pct + '%';
+    const busy = (b) => { $('send').disabled=b; $('spin').hidden=!b; $('ctat').textContent = b ? 'Processing…' : 'Confirm and send'; };
+    const parseAmt = (v) => (String(v||'').replace(/[^0-9.,]/g,'').replace(',', '.'));
+
+    $('cancel').onclick = () => { $('amt').value='10.00'; $('msisdn').value='233241234567'; $('log').textContent=''; $('msg').textContent=''; step(1,0); step(2,0); step(3,0); };
+
+    $('send').onclick = async () => {
+      try {
+        busy(true); step(1, 30); $('msg').textContent = 'Submitting RTP…'; $('log').textContent='';
+        const amount = Number(parseAmt($('amt').value) || '0').toFixed(2);
+        const msisdn = $('msisdn').value.trim();
+        log(`POST ${apiBase}/request-to-pay amount=${amount} EUR msisdn=${msisdn}`);
+        const res = await fetch(`${apiBase}/request-to-pay`, { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify({ amount, currency:'EUR', payerMsisdn: msisdn, payerMessage:'Demo', payeeNote:'Demo' })});
+        const ct = res.headers.get('content-type')||''; const data = ct.includes('application/json') ? await res.json() : { error: await res.text() };
+        if(!res.ok || !data.referenceId){ throw new Error(data.error || 'Failed RTP'); }
+        const refId = data.referenceId; log(`RTP accepted. referenceId=${refId}`, 'ok'); step(1,100); step(2,45); $('msg').textContent = 'RTP accepted. Polling status…';
+
+        // Poll status
+        const deadline = Date.now()+45000; let last='';
+        while(Date.now()<deadline){
+          const sr = await fetch(`${apiBase}/status/${refId}`, { headers:{'Accept':'application/json'} });
+          const sct = sr.headers.get('content-type')||''; const sd = sct.includes('application/json')? await sr.json() : { error: await sr.text() };
+          if(!sr.ok){ throw new Error(sd.error || sd.message || 'Status failed'); }
+          const st = (sd?.data?.status || sd?.status || '').toUpperCase();
+          if(st && st!==last){ log(`STATUS ${st}`); last=st; }
+          if(st==='SUCCESSFUL'){ step(2,100); step(3,100); $('msg').textContent='Completed ✓'; busy(false); return; }
+          if(st==='FAILED'){ step(2,100); step(3,100); $('msg').textContent='Failed ✕'; busy(false); return; }
+          await new Promise(r=>setTimeout(r, 1200));
+        }
+        $('msg').textContent='Timeout waiting for final status'; log('Timeout', 'err'); busy(false);
+      } catch(e){ log(String(e), 'err'); $('msg').textContent='Error'; busy(false); }
+    };
+  </script>
+</body>
+</html>
+
+

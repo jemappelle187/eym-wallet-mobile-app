@@ -1,39 +1,49 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true };
   }
 
-  componentDidCatch(error, info) {
-    // You can log error to a service here
-    if (this.props.onError) {
-      this.props.onError(error, info);
-    }
+  componentDidCatch(error, errorInfo) {
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
+    });
+    
+    // Log error for debugging
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
   render() {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="warning" size={48} color="#ef4444" />
+          </View>
           <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>An unexpected error occurred. Please try again.</Text>
-          <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>Try Again</Text>
+          <Text style={styles.message}>
+            We encountered an unexpected error. Please try again.
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={this.handleRetry}>
+            <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       );
     }
+
     return this.props.children;
   }
 }
@@ -41,33 +51,38 @@ class ErrorBoundary extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 32,
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#ffffff',
+  },
+  iconContainer: {
+    marginBottom: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#1e40af',
+    color: '#1f2937',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: '#334155',
-    marginBottom: 24,
+    color: '#6b7280',
     textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24,
   },
-  button: {
+  retryButton: {
     backgroundColor: '#1e40af',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
+  retryText: {
+    color: '#ffffff',
     fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,151 +6,88 @@ import {
   Animated,
   Dimensions,
   Platform,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { Typography } from '../constants/Typography';
 
 const { width, height } = Dimensions.get('window');
 
 const PremiumLoadingScreen = () => {
-  const logoScale = useRef(new Animated.Value(0)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const progressWidth = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const haloScale = useRef(new Animated.Value(1)).current;
+  // Typewriter animation
+  const [typewriterText, setTypewriterText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
+  const typewriterOpacity = useRef(new Animated.Value(0)).current;
+  
+  const fullText = 'SendNReceive';
 
   useEffect(() => {
-    // Logo entrance animation
+    // Typewriter animation sequence
     Animated.sequence([
-      Animated.parallel([
-        Animated.timing(logoScale, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(textOpacity, {
+      // Start with typewriter opacity
+      Animated.timing(typewriterOpacity, {
         toValue: 1,
-        duration: 400,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Progress bar animation
-    Animated.timing(progressWidth, {
-      toValue: 0.8, // 80% progress
-      duration: 2000,
-      useNativeDriver: false,
-    }).start();
+    return () => {};
+  }, []);
 
-    // Pulse animation for the logo
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
+  // Separate useEffect for typewriter effect
+  useEffect(() => {
+    if (currentIndex >= fullText.length) {
+      // Typing completed
+      setTimeout(() => {
+        setShowCursor(false);
+      }, 500);
+      return;
+    }
 
-    // Animate halo in sync with logo pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(haloScale, {
-          toValue: 1.15,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(haloScale, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    // Type next character
+    const timer = setTimeout(() => {
+      setTypewriterText(prev => prev + fullText[currentIndex]);
+      setCurrentIndex(prev => prev + 1);
+    }, 80); // Reduced from 150ms to 80ms for smoother typing
 
-    return () => {
-      pulseAnimation.stop();
-    };
+    return () => clearTimeout(timer);
+  }, [currentIndex, fullText]);
+
+  // Separate useEffect for cursor blink
+  useEffect(() => {
+    const cursorTimer = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 400); // Reduced from 500ms to 400ms for smoother cursor
+
+    return () => clearInterval(cursorTimer);
   }, []);
 
   return (
     <LinearGradient
-      colors={Colors.gradientPrimary}
+      colors={[Colors.background, Colors.backgroundSecondary, Colors.background]}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
       <View style={styles.content}>
-        {/* Animated Logo */}
+        {/* Typewriter Animation */}
         <Animated.View
           style={[
-            styles.logoContainer,
+            styles.typewriterContainer,
             {
-              opacity: logoOpacity,
-              transform: [
-                { scale: logoScale },
-                { scale: pulseAnim },
-              ],
+              opacity: typewriterOpacity,
             },
           ]}
         >
-          <Image
-            source={require('../assets/images/sendnreceive_logo.png')}
-            style={styles.logoImage}
-          />
-        </Animated.View>
-
-        {/* Tagline */}
-        <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-          <Text style={styles.tagline}>
-            Africa to World, World to Africa
+          <Text style={styles.typewriterText}>
+            {typewriterText}
+            {showCursor && (
+              <Text style={styles.typewriterCursor}>|</Text>
+            )}
           </Text>
         </Animated.View>
-
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBackground}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                {
-                  width: progressWidth.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0%', '100%'],
-                  }),
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.loadingText}>Loading your secure wallet...</Text>
-        </View>
-
-        {/* Security Badge */}
-        <View style={styles.securityBadge}>
-          <Ionicons
-            name="shield-checkmark"
-            size={16}
-            color={Colors.success}
-          />
-          <Text style={styles.securityText}>Bank-level security</Text>
-        </View>
       </View>
     </LinearGradient>
   );
@@ -165,62 +102,28 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     paddingHorizontal: 40,
+    zIndex: 2,
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
   },
-  logoContainer: {
-    marginBottom: 40,
-  },
-  logoImage: {
-    width: 140,
-    height: 140,
-    resizeMode: 'contain',
-    tintColor: Colors.textInverse,
-  },
-  textContainer: {
+  typewriterContainer: {
     alignItems: 'center',
     marginBottom: 60,
   },
-  tagline: {
-    ...Typography.bodyRegular,
-    color: Colors.textInverse,
-    opacity: 0.9,
-    fontSize: 16,
+  typewriterText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1e293b', // Dark text for light background
     textAlign: 'center',
+    marginBottom: 30,
   },
-  progressContainer: {
-    width: '100%',
-    marginBottom: 40,
-  },
-  progressBackground: {
-    height: 4,
-    backgroundColor: Colors.glassBackground,
-    borderRadius: 2,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.accent,
-    borderRadius: 2,
-  },
-  loadingText: {
-    ...Typography.bodySmall,
-    color: Colors.textInverse,
-    opacity: 0.8,
-    textAlign: 'center',
-  },
-  securityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.glassBackground,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  securityText: {
-    ...Typography.bodySmall,
-    color: Colors.textInverse,
-    marginLeft: 6,
-    fontWeight: '500',
+  typewriterCursor: {
+    color: '#1e293b', // Dark text for light background
+    fontWeight: 'bold',
+    fontSize: 32,
   },
 });
 

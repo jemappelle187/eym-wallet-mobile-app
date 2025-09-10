@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { Colors } from '../constants/Colors';
 
 const WithdrawScreen = ({ navigation, isModal, onClose }) => {
-  const { colors } = useTheme();
+  const { colors = Colors } = useTheme();
+  console.log('colors in WithdrawScreen:', colors);
   const [amount, setAmount] = useState('');
   const [withdrawalMethod, setWithdrawalMethod] = useState(null); // e.g., 'bank_account', 'mobile_wallet'
   const currencyOptions = [
@@ -80,7 +82,7 @@ const WithdrawScreen = ({ navigation, isModal, onClose }) => {
             <Text style={[styles.currencySymbol, { color: colors.textMuted, marginRight: 8 }]}>{selectedCurrency.symbol}</Text>
             <TextInput
               style={[styles.modalAmountInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-              placeholder={`0.00`}
+                              placeholder={`${selectedCurrency?.symbol || '$'} 0.00`}
               placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               value={amount}

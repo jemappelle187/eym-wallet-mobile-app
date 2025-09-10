@@ -12,6 +12,7 @@ import {
   Switch,
   Animated,
   Linking,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -24,9 +25,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import GlobeBackground from '../components/GlobeBackground';
+import StandardizedContainer from '../components/StandardizedContainer';
 
 const AccountScreen = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, biometricEnabled, toggleBiometric } = useContext(AuthContext);
   const navigation = useNavigation();
   const { isDarkMode, toggleTheme, colors } = useTheme();
   const [localPhoto, setLocalPhoto] = useState(null);
@@ -54,7 +56,7 @@ const AccountScreen = () => {
     {
       title: 'Account & Security',
       items: [
-        { label: 'Edit Profile', icon: 'person-outline', screen: 'ProfileSettings', type: 'navigation' },
+        { label: 'Edit Profile', icon: 'person-outline', action: () => navigation.navigate('Home', { screen: 'EditProfile' }), type: 'navigation' },
         { label: 'Change Password', icon: 'lock-closed-outline', action: () => Alert.alert('Security', 'Change Password screen coming soon!') },
         { label: 'Two-Factor Authentication', icon: 'shield-checkmark-outline', action: () => Alert.alert('Security', '2FA settings coming soon!') },
         { label: 'Linked Accounts', icon: 'link-outline', action: () => Alert.alert('Linked Accounts', 'Manage linked accounts coming soon!') },
@@ -65,7 +67,7 @@ const AccountScreen = () => {
       items: [
         { label: 'Payment Methods', icon: 'card-outline', action: () => Alert.alert('Payments', 'Manage payment methods screen coming soon!') },
         { label: 'My Virtual Cards', icon: 'wallet-outline', action: () => Alert.alert('Virtual Cards', 'Virtual cards feature coming soon!') },
-        { label: 'Transaction Limits', icon: 'swap-horizontal-circle-outline', action: () => Alert.alert('Limits', 'Transaction limits screen coming soon!') },
+        { label: 'Transaction Limits', icon: 'swap-horizontal-outline', action: () => Alert.alert('Limits', 'Transaction limits screen coming soon!') },
       ],
     },
     {
@@ -74,6 +76,8 @@ const AccountScreen = () => {
         { label: 'Notifications', icon: 'notifications-outline', action: () => Alert.alert('Notifications', 'Notification settings coming soon!') },
         { label: 'Language', icon: 'language-outline', action: () => Alert.alert('Language', 'Language settings coming soon!') },
         { label: 'Dark Mode', icon: 'moon-outline', type: 'toggle', value: isDarkMode, onPress: toggleTheme },
+        // Add biometric toggle
+        { label: 'FaceID / Biometric Login', icon: 'finger-print-outline', type: 'toggle', value: biometricEnabled, onPress: () => toggleBiometric(!biometricEnabled) },
       ],
     },
     {
@@ -129,8 +133,9 @@ const AccountScreen = () => {
   };
 
   // Enhanced MenuItem component with better visual feedback
-  const MenuItem = ({ label, icon, onPress, isLast, type, value }) => {
+  const MenuItem = ({ label, icon, onPress, isLast, type, value, accessibilityLabel }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const rippleAnim = useRef(new Animated.Value(0)).current;
     
     const handlePressIn = () => {
       Animated.spring(scaleAnim, {
@@ -138,6 +143,11 @@ const AccountScreen = () => {
         useNativeDriver: true,
         speed: 30,
         bounciness: 6,
+      }).start();
+      Animated.timing(rippleAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
       }).start();
     };
     
@@ -147,6 +157,11 @@ const AccountScreen = () => {
         useNativeDriver: true,
         speed: 30,
         bounciness: 6,
+      }).start();
+      Animated.timing(rippleAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
       }).start();
     };
 
@@ -158,15 +173,31 @@ const AccountScreen = () => {
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           activeOpacity={0.92}
+          accessibilityRole={type === 'toggle' ? 'switch' : 'button'}
+          accessibilityLabel={accessibilityLabel}
         >
+          <Animated.View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              backgroundColor: colors.primary + '10',
+              opacity: rippleAnim,
+              borderRadius: 12,
+            }}
+            pointerEvents="none"
+          />
           <Ionicons name={icon} size={22} color={colors.primary} style={styles.menuItemIcon} />
-          <Text style={[styles.menuItemText, { color: colors.text }]}>{label}</Text>
+          <Text style={[styles.menuItemText, { color: colors.text, fontFamily: 'Montserrat-Medium' }]}>{label}</Text>
           {type === 'toggle' ? (
             <Switch
               value={value}
               onValueChange={onPress}
               trackColor={{ false: colors.border, true: colors.primary + '40' }}
               thumbColor={value ? colors.primary : colors.textMuted}
+              accessibilityLabel={label}
             />
           ) : (
             <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
@@ -176,14 +207,34 @@ const AccountScreen = () => {
     );
   };
 
+  const [logoutScale] = useState(new Animated.Value(1));
+  const handleLogoutPressIn = () => {
+    Animated.spring(logoutScale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 6,
+    }).start();
+  };
+  const handleLogoutPressOut = () => {
+    Animated.spring(logoutScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 6,
+    }).start();
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+    <StandardizedContainer 
+      backgroundColor={colors.background}
+      showGlobeBackground={true}
+      globeOpacity={0.13}
+      statusBarStyle="dark-content"
+    >
       <Animated.View style={{ flex: 1, opacity: screenOpacity }}>
         {/* Subtle background pattern */}
         <View style={[styles.backgroundPattern, { backgroundColor: colors.lightBlue + '10' }]} pointerEvents="none" />
-        {/* Globe background image */}
-        <GlobeBackground />
-        
         {/* Centered Avatar and Profile Info */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
           <View style={styles.profilePhotoContainer}>
@@ -209,14 +260,13 @@ const AccountScreen = () => {
             </View>
           </View>
         </View>
-
         <ScrollView 
           showsVerticalScrollIndicator={false} 
           contentContainerStyle={[styles.scrollContentContainer, { paddingBottom: Platform.OS === 'ios' ? 110 : 100 }]}
         >
           {/* Enhanced Profile Section */}
           <View style={[styles.profileSection, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.editProfileButton} onPress={() => navigation.navigate('ProfileSettings')}>
+            <TouchableOpacity style={styles.editProfileButton} onPress={() => navigation.navigate('Home', { screen: 'EditProfile' })}>
               <Ionicons name="pencil-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
               <Text style={[styles.editProfileText, { color: colors.primary }]}>Edit Profile</Text>
             </TouchableOpacity>
@@ -232,21 +282,35 @@ const AccountScreen = () => {
               }),
               overflow: 'hidden',
             };
-            
+            const chevronRotation = animatedHeights[sectionIndex].interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', '-180deg'],
+            });
             return (
-              <View key={sectionIndex} style={[styles.sectionContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                <TouchableOpacity 
-                  style={styles.sectionHeader} 
-                  onPress={() => toggleSection(sectionIndex)}
-                  activeOpacity={0.8}
+              <View key={sectionIndex} style={[styles.sectionContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}> 
+                <LinearGradient
+                  colors={[colors.lightBlue + '80', '#fff0']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.sectionHeaderGradient}
                 >
-                  <Text style={[styles.sectionTitle, { color: colors.primary }]}>{section.title}</Text>
-                  <Ionicons 
-                    name={expandedSections[sectionIndex] ? 'chevron-up-outline' : 'chevron-down-outline'} 
-                    size={18} 
-                    color={colors.primary} 
-                  />
-                </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.sectionHeader} 
+                    onPress={() => toggleSection(sectionIndex)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Toggle ${section.title} section`}
+                  >
+                    <Text style={[styles.sectionTitle, { color: colors.primary, fontFamily: 'Montserrat-SemiBold' }]}>{section.title}</Text>
+                    <Animated.View style={{ transform: [{ rotate: chevronRotation }] }}>
+                      <Ionicons 
+                        name={expandedSections[sectionIndex] ? 'chevron-up-outline' : 'chevron-down-outline'} 
+                        size={18} 
+                        color={colors.primary} 
+                      />
+                    </Animated.View>
+                  </TouchableOpacity>
+                </LinearGradient>
                 <Animated.View style={animatedStyle}>
                   {section.items.map((item, itemIndex) => (
                     <MenuItem
@@ -265,6 +329,7 @@ const AccountScreen = () => {
                         }
                       }}
                       isLast={itemIndex === section.items.length - 1}
+                      accessibilityLabel={item.label}
                     />
                   ))}
                 </Animated.View>
@@ -277,6 +342,8 @@ const AccountScreen = () => {
             style={[styles.logoutButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} 
             onPress={handleLogout}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Logout"
           >
             <Ionicons name="log-out-outline" size={22} color={colors.error} style={styles.menuItemIcon} />
             <Text style={[styles.menuItemText, { color: colors.error }]}>Logout</Text>
@@ -285,11 +352,11 @@ const AccountScreen = () => {
           {/* App Info */}
           <View style={styles.appInfoContainer}>
             <Text style={[styles.appVersion, { color: colors.textMuted }]}>App Version 1.0.0 (MVP)</Text>
-            <Text style={[styles.legalInfo, { color: colors.textMuted }]}>© 2024 SendNReceive. All rights reserved.</Text>
+            <Text style={[styles.legalInfo, { color: colors.textMuted }]}>© 2026 SendNReceive. All rights reserved.</Text>
           </View>
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </StandardizedContainer>
   );
 };
 
@@ -481,6 +548,17 @@ const styles = StyleSheet.create({
   legalInfo: {
     ...Typography.smallText,
     textAlign: 'center',
+  },
+  avatarGradientRing: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 48,
+    padding: 4,
+    marginBottom: 8,
+  },
+  sectionHeaderGradient: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
 });
 

@@ -14,7 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "bundleIdentifier": "com.jemappelle187.sendnreceiveapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "SendNReceive uses FaceID to securely authenticate you and protect your wallet."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +27,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "package": "com.jemappelle187.sendnreceiveapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

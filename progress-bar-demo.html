@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Bar Styles Demo - SendNReceive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #1e40af, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+
+        .demo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #1e40af;
+        }
+
+        .demo-description {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .progress-container {
+            background: rgba(255, 255, 255, 0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #1e40af;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        /* Style 1: Gradient Progress Bar */
+        .gradient-progress {
+            background: linear-gradient(90deg, #1e40af 0%, #3b82f6 50%, #10b981 100%);
+        }
+
+        /* Style 2: Pulsing Progress Bar */
+        .pulsing-progress {
+            background: #1e40af;
+            box-shadow: 0 0 20px rgba(30, 64, 175, 0.8);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(30, 64, 175, 0.8); }
+            50% { box-shadow: 0 0 30px rgba(30, 64, 175, 1); }
+        }
+
+        /* Style 3: Segmented Progress Bar */
+        .segmented-container {
+            display: flex;
+            gap: 4px;
+        }
+
+        .progress-segment {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(30, 64, 175, 0.3);
+            transition: background-color 0.3s ease;
+        }
+
+        .progress-segment.active {
+            background: #1e40af;
+        }
+
+        /* Style 4: Circular Progress Ring */
+        .circular-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+
+        .circular-progress {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #1e40af;
+            background: rgba(30, 64, 175, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .circular-ring {
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top-color: #10b981;
+            border-right-color: #10b981;
+            transition: transform 0.3s ease;
+        }
+
+        .circular-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        /* Style 5: Animated Dots */
+        .dots-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            height: 8px;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #1e40af;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        /* Style 6: Step Icons Progress */
+        .step-icons-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .step-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .step-icon.active {
+            opacity: 1;
+        }
+
+        .step-icon.completed {
+            color: #10b981;
+        }
+
+        .step-icon svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+
+        .step-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Style 7: Wave Progress */
+        .wave-progress {
+            background: transparent;
+            border: 2px dashed #1e40af;
+            position: relative;
+        }
+
+        .wave-progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, #1e40af 50%, transparent 100%);
+            animation: wave 2s infinite;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Style 8: Particle Progress */
+        .particle-container {
+            position: relative;
+        }
+
+        .particle {
+            position: absolute;
+            top: -2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            transition: left 0.3s ease;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #1e40af;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .percentage {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 15px;
+        }
+
+        .style-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .style-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .style-btn.active {
+            background: #1e40af;
+            border-color: #1e40af;
+            color: white;
+        }
+
+        .style-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .style-btn.active:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Progress Bar Styles Demo</h1>
+            <p>Test all 8 progress bar styles for SendNReceive app</p>
+        </div>
+
+        <div class="style-selector">
+            <button class="style-btn" onclick="selectStyle(1)">1. Gradient</button>
+            <button class="style-btn" onclick="selectStyle(2)">2. Pulsing</button>
+            <button class="style-btn" onclick="selectStyle(3)">3. Segmented</button>
+            <button class="style-btn active" onclick="selectStyle(4)">4. Circular</button>
+            <button class="style-btn" onclick="selectStyle(5)">5. Dots</button>
+            <button class="style-btn" onclick="selectStyle(6)">6. Step Icons</button>
+            <button class="style-btn" onclick="selectStyle(7)">7. Wave</button>
+            <button class="style-btn" onclick="selectStyle(8)">8. Particle</button>
+        </div>
+
+        <div class="demo-section">
+            <h2 class="demo-title" id="demo-title">Style 4: Circular Progress Ring</h2>
+            <p class="demo-description" id="demo-description">Modern circular indicator with percentage</p>
+            
+            <div class="percentage" id="percentage">0%</div>
+            
+            <div id="progress-display">
+                <!-- Progress bar will be inserted here -->
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="startAnimation()">
+                    <span>▶</span>
+                    <span id="btn-text">Start Animation</span>
+                </button>
+                <button class="btn btn-secondary" onclick="resetAnimation()">
+                    <span>↻</span>
+                    <span>Reset</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStyle = 4;
+        let isAnimating = false;
+        let animationId = null;
+        let progress = 0;
+
+        const styles = [
+            {
+                name: 'Gradient Progress Bar',
+                description: 'Smooth color transition from blue to green as it progresses'
+            },
+            {
+                name: 'Pulsing Progress Bar',
+                description: 'Glowing shadow effect during processing'
+            },
+            {
+                name: 'Segmented Progress Bar',
+                description: 'Discrete steps (25%, 50%, 75%, 100%)'
+            },
+            {
+                name: 'Circular Progress Ring',
+                description: 'Modern circular indicator with percentage'
+            },
+            {
+                name: 'Animated Dots',
+                description: 'Three dots that animate during processing'
+            },
+            {
+                name: 'Step Icons Progress',
+                description: 'Icons for each stage (rocket, sync, checkmark)'
+            },
+            {
+                name: 'Wave Progress',
+                description: 'Dashed border style for dynamic feel'
+            },
+            {
+                name: 'Particle Progress',
+                description: 'Moving particle that follows the progress'
+            }
+        ];
+
+        function selectStyle(styleNumber) {
+            currentStyle = styleNumber;
+            updateStyleButtons();
+            updateDemoInfo();
+            renderProgressBar();
+            resetAnimation();
+        }
+
+        function updateStyleButtons() {
+            document.querySelectorAll('.style-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index + 1 === currentStyle);
+            });
+        }
+
+        function updateDemoInfo() {
+            const style = styles[currentStyle - 1];
+            document.getElementById('demo-title').textContent = `Style ${currentStyle}: ${style.name}`;
+            document.getElementById('demo-description').textContent = style.description;
+        }
+
+        function renderProgressBar() {
+            const container = document.getElementById('progress-display');
+            const percentage = Math.round(progress * 100);
+            
+            switch (currentStyle) {
+                case 1: // Gradient
+                    container.innerHTML = `
+                        <div class="progress-container">
+                            <div class="progress-bar gradient-progress" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 2: // Pulsing
+                    container.innerHTML = `
+                        <div class="progress-container">
+                            <div class="progress-bar pulsing-progress" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 3: // Segmented
+                    const segments = [0.25, 0.5, 0.75, 1];
+                    const segmentHtml = segments.map(segment => 
+                        `<div class="progress-segment ${progress >= segment ? 'active' : ''}"></div>`
+                    ).join('');
+                    container.innerHTML = `
+                        <div class="progress-container segmented-container">
+                            ${segmentHtml}
+                        </div>
+                    `;
+                    break;
+                    
+                case 4: // Circular
+                    const rotation = progress * 360;
+                    container.innerHTML = `
+                        <div class="circular-container">
+                            <div class="circular-progress">
+                                <div class="circular-ring" style="transform: rotate(${rotation}deg)"></div>
+                                <div class="circular-text">${percentage}%</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 5: // Dots
+                    const dots = [0, 1, 2];
+                    const dotHtml = dots.map(index => {
+                        const isActive = progress >= (index + 1) * 0.33;
+                        return `<div class="progress-dot ${isActive ? 'active' : ''}"></div>`;
+                    }).join('');
+                    container.innerHTML = `
+                        <div class="dots-container">
+                            ${dotHtml}
+                        </div>
+                    `;
+                    break;
+                    
+                case 6: // Step Icons
+                    const steps = [
+                        { icon: '🚀', label: 'Initiate' },
+                        { icon: '⚡', label: 'Process' },
+                        { icon: '✅', label: 'Complete' }
+                    ];
+                    const stepHtml = steps.map((step, index) => {
+                        const isActive = progress >= (index + 1) * 0.33;
+                        const isCompleted = progress >= (index + 1) * 0.33;
+                        return `
+                            <div class="step-icon ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
+                                <div style="font-size: 24px;">${step.icon}</div>
+                                <div class="step-label">${step.label}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    container.innerHTML = `
+                        <div class="step-icons-container">
+                            ${stepHtml}
+                        </div>
+                    `;
+                    break;
+                    
+                case 7: // Wave
+                    container.innerHTML = `
+                        <div class="progress-container">
+                            <div class="progress-bar wave-progress" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 8: // Particle
+                    const particleLeft = percentage;
+                    container.innerHTML = `
+                        <div class="progress-container particle-container">
+                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                            <div class="particle" style="left: ${particleLeft}%"></div>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        function startAnimation() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            progress = 0;
+            document.getElementById('btn-text').textContent = 'Animating...';
+            
+            const startTime = Date.now();
+            const duration = 3000; // 3 seconds
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                progress = Math.min(elapsed / duration, 1);
+                
+                document.getElementById('percentage').textContent = Math.round(progress * 100) + '%';
+                renderProgressBar();
+                
+                if (progress < 1) {
+                    animationId = requestAnimationFrame(animate);
+                } else {
+                    isAnimating = false;
+                    document.getElementById('btn-text').textContent = 'Start Animation';
+                }
+            }
+            
+            animate();
+        }
+
+        function resetAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            isAnimating = false;
+            progress = 0;
+            document.getElementById('percentage').textContent = '0%';
+            document.getElementById('btn-text').textContent = 'Start Animation';
+            renderProgressBar();
+        }
+
+        // Initialize
+        renderProgressBar();
+    </script>
+</body>
+</html>

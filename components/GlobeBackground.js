@@ -1,25 +1,48 @@
 import React from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
-const GlobeBackground = () => (
-  <Image
-    source={require('../assets/images/globe.jpg')}
-    style={styles.globeBackground}
-    resizeMode="contain"
-    pointerEvents="none"
-  />
-);
+const GlobeBackground = ({ opacity = 0.25, style, pointerEvents = "none", color }) => {
+  const { colors, isDarkMode } = useTheme();
+  
+  // Adjust opacity for dark mode - make it more visible
+  const adjustedOpacity = isDarkMode ? Math.max(opacity * 2.5, 0.4) : opacity;
+  
+  // If color is provided, use higher opacity for better visibility
+  const finalOpacity = color ? Math.max(adjustedOpacity * 2, 0.8) : adjustedOpacity;
+  
+  try {
+    return (
+      <Image
+        source={require('../assets/images/globe_transparent.png')}
+        style={[
+          styles.globeBackground, 
+          style, 
+          { 
+            opacity: finalOpacity,
+            // Use provided color or default tint for dark mode
+            tintColor: color || (isDarkMode ? colors.primary + '40' : undefined)
+          }
+        ]}
+        resizeMode="contain"
+        pointerEvents={pointerEvents}
+      />
+    );
+  } catch (error) {
+    // Fallback to empty view if image fails to load
+    console.warn('GlobeBackground image failed to load:', error);
+    return <View style={[styles.globeBackground, style, { opacity: adjustedOpacity }]} pointerEvents={pointerEvents} />;
+  }
+};
 
 const styles = StyleSheet.create({
   globeBackground: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-    opacity: 0.13,
+    top: '5%',
+    left: '5%',
+    width: '90%',
+    height: '90%',
+    opacity: 0.25,
     zIndex: 0,
   },
 });

@@ -529,8 +529,16 @@ const styles = StyleSheet.create({
   },
 });
 
-export default {
-  PINInput,
-  SecurityStatus,
-  TwoFactorAuth,
-}; 
+// Main SecurityFeatures component
+export const SecurityFeatures = ({ visible, onClose, colors }) => {
+  if (!visible) return null;
+  
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <SecurityStatus status="secure" />
+      {/* Add other security features as needed */}
+    </View>
+  );
+};
+
+export default SecurityFeatures; 

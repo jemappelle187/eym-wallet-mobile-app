@@ -1,0 +1,19 @@
+# Exclude backend API from React Native bundler
+auto-convert-api/
+
+# Exclude other backend-related files
+*.md
+*.txt
+*.log
+
+# Exclude test files
+test-*.js
+*-test.js
+*.test.js
+*.spec.js
+
+# Exclude documentation
+docs/
+*.md
+README.md
+

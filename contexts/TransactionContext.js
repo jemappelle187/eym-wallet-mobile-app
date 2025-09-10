@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
 // Mock Data (can be moved to a separate file if it grows larger)
 const initialMockTransactions = [
@@ -62,4 +62,13 @@ export const TransactionProvider = ({ children }) => {
       {children}
     </TransactionContext.Provider>
   );
+};
+
+// Custom hook to use the transaction context
+export const useTransactions = () => {
+  const context = useContext(TransactionContext);
+  if (context === undefined) {
+    throw new Error('useTransactions must be used within a TransactionProvider');
+  }
+  return context;
 }; 

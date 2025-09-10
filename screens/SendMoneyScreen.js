@@ -28,7 +28,7 @@ const { width, height } = Dimensions.get('window');
 const MOCK_CONVERSION_RATE_USD_TO_KES = 130.50;
 
 const SendMoneyScreen = ({ navigation }) => {
-  const { colors } = useTheme();
+  const { colors = Colors } = useTheme();
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState({ code: 'USD', symbol: '$', name: 'US Dollar' });
   const [amountData, setAmountData] = useState({ amount: 0, fee: 0, total: 0 });

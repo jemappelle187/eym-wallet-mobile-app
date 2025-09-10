@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { Typography } from '../constants/Typography';
@@ -18,11 +19,31 @@ import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
-const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalance, eurcBalance }) => {
+// Add a utility to convert hex to rgba
+function hexToRgba(hex, alpha) {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  const num = parseInt(c, 16);
+  return `rgba(${(num >> 16) & 255},${(num >> 8) & 255},${num & 255},${alpha})`;
+}
+
+const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalance, eurcBalance, scrollViewRef }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showBalance, setShowBalance] = useState(true);
   const translateX = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
+  
+  // Debug: Log when balances prop changes
+  useEffect(() => {
+    console.log('🔄 BalanceCard: Balances prop updated:', balances);
+  }, [balances]);
+  
+  // Add visual feedback during swipe
+  const cardOpacity = translateX.interpolate({
+    inputRange: [-width * 0.3, 0, width * 0.3],
+    outputRange: [0.7, 1, 0.7],
+    extrapolate: 'clamp',
+  });
 
   const mockBalances = balances.length > 0 ? balances : [
     { currency: 'USD', amount: 1250.50, symbol: '$', color: Colors.primary },
@@ -31,6 +52,13 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
   ];
 
   const currentBalance = mockBalances[currentIndex];
+
+  // Call onCurrencyChange when component mounts to sync with HomeScreen
+  useEffect(() => {
+    if (onCurrencyChange && mockBalances.length > 0) {
+      onCurrencyChange(mockBalances[currentIndex]);
+    }
+  }, []);
 
   const handleSwipe = (direction) => {
     Haptics.selectionAsync();
@@ -84,6 +112,7 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
     if (onActionPress) onActionPress(action);
   };
 
+  // Simplified gesture handling for swipe navigation
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
     { useNativeDriver: true }
@@ -92,17 +121,19 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
   const onHandlerStateChange = (event) => {
     if (event.nativeEvent.state === State.END) {
       const { translationX } = event.nativeEvent;
-      const threshold = width * 0.3;
+      const threshold = width * 0.2; // Reduced threshold for easier swiping
 
       if (translationX > threshold) {
         handleSwipe('right');
       } else if (translationX < -threshold) {
         handleSwipe('left');
       } else {
-        // Reset position
+        // Reset position if no swipe was triggered
         Animated.spring(translateX, {
           toValue: 0,
           useNativeDriver: true,
+          tension: 100,
+          friction: 8,
         }).start();
       }
     }
@@ -114,6 +145,8 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
       <PanGestureHandler
         onGestureEvent={onGestureEvent}
         onHandlerStateChange={onHandlerStateChange}
+        simultaneousHandlers={scrollViewRef}
+        shouldCancelWhenOutside={true}
       >
         <Animated.View
           style={[
@@ -123,15 +156,20 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
                 { translateX },
                 { scale },
               ],
+              opacity: cardOpacity,
             },
           ]}
         >
-          <LinearGradient
-            colors={[currentBalance.color, currentBalance.color + 'CC']}
-            style={styles.card}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
+                      <LinearGradient
+              colors={[
+                hexToRgba(currentBalance.color, 0.8),
+                hexToRgba(currentBalance.color, 0.8)
+              ]}
+              style={styles.premiumCard}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <BlurView intensity={10} tint="light" style={StyleSheet.absoluteFill} />
             {/* Card Header */}
             <View style={styles.cardHeader}>
               <View style={styles.currencyInfo}>
@@ -196,21 +234,54 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
         </Animated.View>
       </PanGestureHandler>
 
-      {/* Carousel Dots: restore to below the card, not inside */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4, marginBottom: 0 }}>
-        {mockBalances.map((balance, index) => (
-          <View
-            key={balance.currency}
-            style={{
-              width: index === currentIndex ? 18 : 8,
-              height: 8,
-              borderRadius: 4,
-              marginHorizontal: 3,
-              backgroundColor: index === currentIndex ? Colors.primary : Colors.border,
-              opacity: index === currentIndex ? 1 : 0.5,
-            }}
-          />
-        ))}
+      {/* Navigation Controls */}
+      <View style={styles.navigationContainer}>
+        {/* Left Arrow */}
+        <TouchableOpacity 
+          style={styles.navArrow} 
+          onPress={() => handleSwipe('right')}
+          accessibilityLabel="Previous currency"
+        >
+          <Ionicons name="chevron-back" size={20} color={Colors.textMuted} />
+        </TouchableOpacity>
+
+        {/* Carousel Dots */}
+        <View style={styles.dotsContainer}>
+          {mockBalances.map((balance, index) => (
+            <TouchableOpacity
+              key={balance.currency}
+              style={[
+                styles.dot,
+                index === currentIndex && styles.activeDot
+              ]}
+              onPress={() => {
+                if (index !== currentIndex) {
+                  const direction = index > currentIndex ? 'left' : 'right';
+                  const steps = Math.abs(index - currentIndex);
+                  for (let i = 0; i < steps; i++) {
+                    setTimeout(() => handleSwipe(direction), i * 100);
+                  }
+                }
+              }}
+              accessibilityLabel={`Switch to ${balance.currency}`}
+            />
+          ))}
+        </View>
+
+        {/* Right Arrow */}
+        <TouchableOpacity 
+          style={styles.navArrow} 
+          onPress={() => handleSwipe('left')}
+          accessibilityLabel="Next currency"
+        >
+          <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+      
+      {/* Swipe Hint */}
+      <View style={styles.swipeHint}>
+        <Ionicons name="swap-horizontal" size={12} color={Colors.textMuted} />
+        <Text style={styles.swipeHintText}>Swipe to switch currencies</Text>
       </View>
     </View>
   );
@@ -219,7 +290,7 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    marginVertical: 16, // reduced from 24
+    marginVertical: 0, // move card even more upwards
     alignItems: 'center',
   },
   currencyIndicator: {
@@ -249,7 +320,23 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24, // reduced from 28
     minWidth: width * 0.88,
-    backgroundColor: Colors.cardBackground,
+    // backgroundColor removed to allow gradient transparency
+  },
+  premiumCard: {
+    borderRadius: 28,
+    padding: 28,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.15)',
+    shadowColor: '#3B82F6',
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 16,
+    overflow: 'hidden',
+    minWidth: width * 0.88, // Card-like width
+    maxWidth: 420, // Prevents card from being too wide on large screens
+    alignSelf: 'center', // Center the card
   },
   cardHeader: {
     flexDirection: 'row',
@@ -310,24 +397,52 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '600',
   },
+  navigationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
   navArrow: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -20,
     backgroundColor: Colors.backgroundSecondary,
     borderRadius: 20,
-    padding: 6,
+    padding: 8,
     shadowColor: Colors.shadowLight,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
   },
-  leftArrow: {
-    left: 0,
+  dotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  rightArrow: {
-    right: 0,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.border,
+    opacity: 0.5,
+  },
+  activeDot: {
+    width: 18,
+    backgroundColor: Colors.primary,
+    opacity: 1,
+  },
+  swipeHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 4,
+  },
+  swipeHintText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontFamily: 'Montserrat',
+    fontWeight: '500',
   },
   stackedStableCol: {
     alignSelf: 'flex-start',
