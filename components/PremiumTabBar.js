@@ -234,7 +234,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
       >
           {/* Premium gradient overlay with multiple layers for glass effect */}
         <LinearGradient
-            colors={[colors.cardBackground + 'D9', colors.cardBackground + 'A6', colors.cardBackground + '73', colors.cardBackground + '40']}
+            colors={[colors.cardBackground + '33', colors.cardBackground + '2A', colors.cardBackground + '1F', colors.cardBackground + '1A']}
           style={{
             position: 'absolute',
             top: 0,
@@ -247,7 +247,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
         
         {/* Subtle inner highlight for glass depth */}
         <LinearGradient
-            colors={[colors.cardBackground + '66', colors.cardBackground + '33', colors.cardBackground + '00']}
+            colors={[colors.cardBackground + '1A', colors.cardBackground + '14', colors.cardBackground + '00']}
           style={{
             position: 'absolute',
             top: 0,
@@ -260,7 +260,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
         
         {/* Additional glass layer for more depth */}
         <LinearGradient
-            colors={[colors.cardBackground + '1A', colors.cardBackground + '0D', colors.cardBackground + '00']}
+            colors={[colors.cardBackground + '0D', colors.cardBackground + '0A', colors.cardBackground + '00']}
           style={{
             position: 'absolute',
             top: '40%',

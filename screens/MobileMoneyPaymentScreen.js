@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, Keyboard, Animated } from 'react-native';
+// Removed expo-network import - using basic fetch test instead
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -17,6 +18,8 @@ import RescueCard from '../components/RescueCard';
 import SuccessActions from '../components/SuccessActions';
 import { useRtpPoller } from '../hooks/useRtpPoller';
 import { formatMoney, formatFeeAdjacency } from '../utils/moneyFormatting';
+import StepBar from '../components/progress/StepBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess }) => {
   const { colors } = useTheme();
@@ -26,6 +29,67 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
   useEffect(() => {
     console.log('📱 MobileMoneyPaymentScreen mounted');
   }, []);
+
+  // State for tracking hydration and preventing race conditions
+  const [hydrated, setHydrated] = useState(false);
+  const processingConsumedRef = useRef(false);
+  const lastParamsRef = useRef('');
+
+  // 1) Hydrate from params (runs before paint) - with guard to prevent re-firing
+  useLayoutEffect(() => {
+    const serialized = JSON.stringify(route?.params ?? {});
+    if (serialized === lastParamsRef.current) return;
+    lastParamsRef.current = serialized;
+
+    const p = route.params ?? {};
+    processingConsumedRef.current = false; // reset per new params
+    setHydrated(false);
+
+    console.log('🔄 Hydrating state from route params:', p);
+
+    if (p.selectedCurrency || p.initialCurrency) {
+      const currency = p.selectedCurrency || p.initialCurrency;
+      console.log('🎯 Setting currency from params:', currency);
+      setSelectedCurrency(currency);
+    } else {
+      // Load saved currency preference if no param provided
+      (async () => {
+        try {
+          const saved = await AsyncStorage.getItem('preferredCurrency');
+          if (saved) setSelectedCurrency(saved);
+        } catch {}
+      })();
+    }
+    if (p.selectedProvider || p.initialProvider) {
+      setSelectedProvider(p.selectedProvider || p.initialProvider);
+    }
+    if (p.selectedVerifiedPhone) setSelectedVerifiedPhone(p.selectedVerifiedPhone);
+    if (p.recipientName) setRecipientName(p.recipientName);
+
+    if (p.initialAmount != null) {
+      const amt = String(p.initialAmount);
+      console.log('📊 Setting amount from initialAmount:', amt);
+      setAmount(amt);
+      setLocalAmount(amt);
+    }
+    setHydrated(true);
+  }, [route.params]);
+
+  // 2) Trigger once conditions are met
+  useEffect(() => {
+    const shouldStart =
+      route.params?.startProcessing &&
+      hydrated &&
+      !!amount?.trim() &&
+      !processingConsumedRef.current;
+
+    if (!shouldStart) return;
+
+    console.log('🚀 Starting processing - all conditions met');
+    processingConsumedRef.current = true;         // guard re-fire
+    handleMobileMoneyAction({ amount });          // pass value explicitly
+    navigation.setParams({ startProcessing: false }); // consume param
+  }, [route.params?.startProcessing, hydrated, amount]);
   
   // Determine if this is for deposit (Add Money) or send (Send Money)
   const isDeposit = route.params?.isDeposit || false;
@@ -48,7 +112,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
   const chevronRotation = useRef(new Animated.Value(0)).current;
   
   // Currency state
-  const [selectedCurrency, setSelectedCurrency] = useState('GHS');
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   
   // Currency options
   const currencyOptions = [
@@ -61,11 +125,12 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
   
   const selectedCurrencyObj = currencyOptions.find(c => c.code === selectedCurrency);
   
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [transactionDetails, setTransactionDetails] = useState(null);
   const [fees, setFees] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [testAccountStatus, setTestAccountStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   
   // P0.1: Enhanced state management to kill processing after success race
   const [phase, setPhase] = useState('IDLE'); // IDLE | SUBMIT | PROCESS | COMPLETE | FAILED
@@ -79,12 +144,30 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     new Animated.Value(0)
   ]).current;
   
+  // Animation for processing UI fade-in
+  const processingFadeAnim = useRef(new Animated.Value(0)).current;
+  
   // P0.1: Kill processing when phase changes to COMPLETE or FAILED
   useEffect(() => {
     if (phase === 'COMPLETE' || phase === 'FAILED') {
       setIsProcessing(false);
     }
   }, [phase]);
+
+  // Fade-in animation for processing UI
+  useEffect(() => {
+    if (isProcessing) {
+      // Fade in processing UI smoothly
+      Animated.timing(processingFadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Reset animation when processing stops
+      processingFadeAnim.setValue(0);
+    }
+  }, [isProcessing, processingFadeAnim]);
 
   // Enhanced amount input states
   const [localAmount, setLocalAmount] = useState('');
@@ -99,7 +182,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
   useEffect(() => {
     let isMounted = true;
     if (isMounted) {
-      initializeMobileMoney();
+    initializeMobileMoney();
     }
     return () => {
       isMounted = false;
@@ -117,14 +200,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     });
   }, [amount, selectedVerifiedPhone, selectedProvider, isProcessing]);
 
-  useEffect(() => {
-    if (initialAmount) {
-      setAmount(initialAmount.toString());
-      setLocalAmount(initialAmount.toString());
-    }
-    if (initialCurrency) setSelectedCurrency(initialCurrency);
-    if (initialProvider) setSelectedProvider(initialProvider);
-  }, [initialAmount, initialCurrency, initialProvider]);
+  // Removed old initialAmount useEffect - now handled in useLayoutEffect above
 
   // FX Helper functions
   const computeTargetSymbol = (code) => {
@@ -250,7 +326,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
         console.log('🎯 Setting default provider:', defaultProvider);
         setSelectedProvider(defaultProvider);
         try {
-          mobileMoneyManager.setActiveProvider(defaultProvider.id);
+        mobileMoneyManager.setActiveProvider(defaultProvider.id);
         } catch (error) {
           console.log('Provider setting failed, continuing with fallback');
         }
@@ -318,15 +394,15 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     }
 
     // Set fees to 0 for all transactions
-    setFees(0);
-    setTotalAmount(numAmount);
+      setFees(0);
+      setTotalAmount(numAmount);
   };
 
-  const validateForm = () => {
-    console.log('🔍 Validating form:', { amount, selectedVerifiedPhone, selectedProvider, isDeposit });
+  const validateForm = (amountToValidate = amount) => {
+    console.log('🔍 Validating form:', { amount: amountToValidate, selectedVerifiedPhone, selectedProvider, isDeposit });
     
-    if (!amount || parseFloat(amount) <= 0) {
-      console.log('❌ Amount validation failed:', amount);
+    if (!amountToValidate || parseFloat(amountToValidate) <= 0) {
+      console.log('❌ Amount validation failed:', amountToValidate);
       Alert.alert('Error', 'Please enter a valid amount');
       return false;
     }
@@ -391,9 +467,10 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     }
   };
 
-  const handleMobileMoneyAction = async () => {
+  const handleMobileMoneyAction = async ({ amount: override } = {}) => {
     console.log('🚀 handleMobileMoneyAction called');
-    if (!validateForm()) {
+    const value = override ?? amount;
+    if (!validateForm(value)) {
       console.log('❌ Form validation failed');
       return;
     }
@@ -401,10 +478,63 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     try {
       console.log('✅ Form validation passed, starting processing...');
       setIsProcessing(true);
-      setShowConfirmationModal(false);
       setProcessingStep(1);
+
+      // 1. Basic connectivity test (using fetch instead of native modules)
+      // Basic connectivity check (DEV only)
+      if (__DEV__) {
+        console.log('🌐 Testing HTTPS connectivity...');
+        try {
+          await fetch('https://www.google.com', { method: 'HEAD' });
+          console.log('✅ HTTPS connectivity OK');
+        } catch (e) {
+          console.log('❌ HTTPS connectivity failed:', e.message);
+          throw new Error('HTTPS connectivity failed - check network/TLS config');
+        }
+      }
+
+      // 2. Enhanced diagnostics with preflight test
+      const { API_BASE } = await import('../app/config/api');
+      const MTN_BASE_URL = `${API_BASE}/v1/momo`;
+      const base = API_BASE.replace(/\/+$/, '');
+      console.log('🌐 Base URL:', base);
+      console.log('🌐 MTN API Base URL:', MTN_BASE_URL);
+
+      // Preflight test to the base host (DEV only)
+      if (__DEV__) {
+        try {
+          const preflight = await fetch(`${base}/health`, { method: 'GET' });
+          console.log('🧪 Preflight to base host:', preflight.status);
+          if (!preflight.ok) {
+            throw new Error(`Preflight HTTP ${preflight.status}`);
+          }
+        } catch (e) {
+          console.log('💥 Preflight transport error:', e?.message || e);
+          throw new Error(`Preflight failed to ${base}/health: ${e?.message || 'Unknown error'}`);
+        }
+      }
+
+      const endpoint = `${MTN_BASE_URL}/request-to-pay`;
+      console.log('➡️ About to call MTN API:', endpoint);
+      console.log('📊 Request payload:', { amount: value, provider: selectedProvider?.id });
       setProcessingMessage('Submitting payment request...');
-      updateStepProgress(0, 100); // Complete step 1
+      // updateStepProgress(0, 100); // Complete step 1 - commented out for simplified UI
+
+      // Test the actual endpoint before making the real call (DEV only)
+      if (__DEV__) {
+        console.log('🧪 Testing actual endpoint before API call...');
+        try {
+          const endpointTest = await fetch(endpoint, { method: 'GET' });
+          console.log('🧪 Endpoint test result:', endpointTest.status);
+          // Note: 404/405 is expected for GET on POST endpoint, but proves connectivity
+          if (endpointTest.status >= 500) {
+            throw new Error(`Endpoint server error: ${endpointTest.status}`);
+          }
+        } catch (e) {
+          console.log('💥 Endpoint test failed:', e?.message || e);
+          throw new Error(`Endpoint test failed: ${e?.message || 'Unknown error'}`);
+        }
+      }
 
       // Use real MTN API service
       if (isDeposit) {
@@ -424,7 +554,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
           const refId = result?.referenceId ?? result?.data?.referenceId ?? result?.data?.externalId;
           setTransactionId(refId);
           setProcessingStep(2);
-          setProcessingMessage('Payment accepted. Typically completes in ~45s...');
+          setProcessingMessage('Payment accepted. Typically completes in ~3s...');
           updateStepProgress(1, 100); // Complete step 2
           
           const transactionDetails = {
@@ -441,7 +571,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
           
           // Poll for status updates
           const pollStatus = async () => {
-            const deadline = Date.now() + 45000; // 45 second timeout
+            const deadline = Date.now() + 30000; // 30 second timeout
             let lastStatus = '';
             let pollCount = 0;
             const maxPolls = 30; // Max number of polls
@@ -449,35 +579,62 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
             while (Date.now() < deadline) {
               try {
                 const statusResult = await mtnApiService.getTransactionStatus(refId);
-                
-                // Update progress based on polling
+
+                // Normalize & log once for visibility
+                const http = statusResult?.httpStatus ?? statusResult?.statusCode;
+                const rawStatus =
+                  statusResult?.data?.status ??
+                  statusResult?.status ??
+                  statusResult?.data?.current_status ??
+                  '';
+
+                const currentStatus = String(rawStatus || '').toUpperCase();
+
+                // Progress: advance slowly while pending
                 pollCount++;
-                const progress = Math.min((pollCount / maxPolls) * 100, 90); // Cap at 90% until success
-                updateStepProgress(2, progress);
-                
-                if (statusResult.success) {
-                  const currentStatus = statusResult.data.status?.toUpperCase() || '';
+                // const progress = Math.min((pollCount / maxPolls) * 100, 90); // Cap at 90% until success
+                // updateStepProgress(2, progress); // commented out for simplified UI
+
+                // Handle transport/shape problems without blowing up
+                if (!statusResult || statusResult.success === false) {
+                  console.log('ℹ️ Status probe not ready:', { http, raw: statusResult });
+                  const delay = pollCount < 10 ? 500 : Math.min(1000 + (pollCount - 10) * 250, 2500);
+                await new Promise(r => setTimeout(r, delay));
+                  continue; // keep polling
+                }
+
+                // Common backend semantics:
+                //  - 404: not materialized yet
+                //  - 202/200 + status:PENDING|PROCESSING: still running
+                if (http === 404 || currentStatus === '' || currentStatus === 'PENDING' || currentStatus === 'PROCESSING') {
+                  const delay = pollCount < 10 ? 500 : Math.min(1000 + (pollCount - 10) * 250, 2500);
+                await new Promise(r => setTimeout(r, delay));
+                  continue;
+                }
+
+            if (statusResult.success) {
                   
                   if (currentStatus && currentStatus !== lastStatus) {
                     console.log(`📊 Status: ${currentStatus}`);
                     lastStatus = currentStatus;
                   }
                   
-                  if (currentStatus === 'SUCCESSFUL') {
+                  if (currentStatus === 'SUCCESS' || currentStatus === 'SUCCESSFUL') {
                     console.log('🎉 Deposit successful!');
                     
                     // P0.1: Set phase to COMPLETE to kill processing immediately
                     setPhase('COMPLETE');
-                    updateStepProgress(2, 100); // Complete step 3
-                    setTransactionDetails(prev => ({
-                      ...prev,
+                    // updateStepProgress(2, 100); // Complete step 3 - commented out for simplified UI
+              setTransactionDetails(prev => ({
+                ...prev,
                       status: currentStatus,
                       finalStatus: currentStatus
                     }));
-                    completeProcessing(); // Keep stepper visible
                     
                     // Show success after a brief delay
                     setTimeout(() => {
+                      // Complete processing just before navigation
+                      completeProcessing();
                       // Trigger balance refresh if callback provided
                       if (onDepositSuccess) {
                         onDepositSuccess({
@@ -487,37 +644,24 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                         });
                       }
                       
-                      Alert.alert(
-                        '🎉 Deposit Successful!',
-                        `Successfully added ${formatMoney(parseFloat(amount), selectedCurrency)} to your wallet via MTN Mobile Money\n\nTransaction ID: ${refId}`,
-                        [
-                          {
-                            text: 'View Details',
-                            onPress: () => navigation.navigate('TransactionSuccess', { 
-                              transaction: {
-                                ...transactionDetails,
-                                method: 'MTN Mobile Money',
-                                type: 'deposit',
-                                provider: 'mtn',
-                                icon: '📱'
-                              }
-                            })
-                          },
-                          {
-                            text: 'Done',
-                            onPress: () => onClose ? onClose() : navigation.goBack()
-                          }
-                        ]
-                      );
+                      // Navigate back to home since processing is now handled inline in confirm screen
+                      console.log('🚀 Transaction successful, navigating back to home');
+                      navigation.popToTop();
                     }, 1000);
                     return;
                   }
                   
-                  if (currentStatus === 'FAILED') {
+                  if (currentStatus === 'FAILED' || currentStatus === 'REJECTED' || currentStatus === 'CANCELLED') {
                     setProcessingStep(3);
                     setProcessingMessage('Payment failed');
+                    setPhase('FAILED');
                     // Keep stepper visible to show failed state
                     Alert.alert('Error', 'Payment failed. Please try again.');
+                    
+                    // Reset processing state after failure to allow retry
+                    setTimeout(() => {
+                      setIsProcessing(false);
+                    }, 2000);
                     return;
                   }
                 }
@@ -526,15 +670,21 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                 await new Promise(resolve => setTimeout(resolve, 1200));
               } catch (error) {
                 console.error('Error checking payment status:', error);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 2000)); // backoff on transient errors
               }
             }
             
             // Timeout
             setProcessingStep(3);
             setProcessingMessage('Timeout waiting for payment confirmation');
+            setPhase('FAILED');
             // Keep stepper visible to show timeout state
             Alert.alert('Timeout', 'Payment is taking longer than expected. Please check your transaction history.');
+            
+            // Reset processing state after timeout to allow retry
+            setTimeout(() => {
+              setIsProcessing(false);
+            }, 3000);
           };
           
           pollStatus();
@@ -561,7 +711,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
           const refId = result?.referenceId ?? result?.data?.referenceId ?? result?.data?.externalId;
           setTransactionId(refId);
           setProcessingStep(2);
-          setProcessingMessage('Payment accepted. Typically completes in ~45s...');
+          setProcessingMessage('Payment accepted. Typically completes in ~3s...');
           updateStepProgress(1, 100); // Complete step 2
           
           const transactionDetails = {
@@ -578,7 +728,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
           
           // Poll for status updates
           const pollStatus = async () => {
-            const deadline = Date.now() + 45000; // 45 second timeout
+            const deadline = Date.now() + 30000; // 30 second timeout
             let lastStatus = '';
             let pollCount = 0;
             const maxPolls = 30; // Max number of polls
@@ -586,14 +736,14 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
             while (Date.now() < deadline) {
               try {
                 const statusResult = await mtnApiService.getTransactionStatus(refId);
-                console.log('Payment status:', statusResult);
-                
+            console.log('Payment status:', statusResult);
+            
                 // Update progress based on polling
                 pollCount++;
-                const progress = Math.min((pollCount / maxPolls) * 100, 90); // Cap at 90% until success
-                updateStepProgress(2, progress);
+                // const progress = Math.min((pollCount / maxPolls) * 100, 90); // Cap at 90% until success
+                // updateStepProgress(2, progress); // commented out for simplified UI
                 
-                if (statusResult.success) {
+            if (statusResult.success) {
                   const currentStatus = statusResult.data.status?.toUpperCase() || '';
                   
                   if (currentStatus && currentStatus !== lastStatus) {
@@ -601,49 +751,35 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                     lastStatus = currentStatus;
                   }
                   
-                  if (currentStatus === 'SUCCESSFUL') {
-                    updateStepProgress(2, 100); // Complete step 3
-                    setTransactionDetails(prev => ({
-                      ...prev,
+                  if (currentStatus === 'SUCCESS' || currentStatus === 'SUCCESSFUL') {
+                    // updateStepProgress(2, 100); // Complete step 3 - commented out for simplified UI
+              setTransactionDetails(prev => ({
+                ...prev,
                       status: currentStatus,
                       finalStatus: currentStatus
                     }));
-                    completeProcessing(); // Keep stepper visible
                     
                     // Show success after a brief delay
                     setTimeout(() => {
-                      Alert.alert(
-                        '🎉 Payment Sent!',
-                        `Successfully sent ${amount} ${selectedCurrency} to ${recipientName} via MTN Mobile Money\n\nTransaction ID: ${refId}`,
-                        [
-                          {
-                            text: 'View Details',
-                            onPress: () => navigation.navigate('TransactionSuccess', { 
-                              transaction: {
-                                ...transactionDetails,
-                                method: 'MTN Mobile Money',
-                                type: 'transfer',
-                                provider: 'mtn',
-                                icon: '📱',
-                                recipient: recipientName
-                              }
-                            })
-                          },
-                          {
-                            text: 'Done',
-                            onPress: () => onClose ? onClose() : navigation.goBack()
-                          }
-                        ]
-                      );
+                      // Complete processing just before navigation
+                      completeProcessing();
+                      // Navigate back to home since processing is now handled inline in confirm screen
+                      navigation.popToTop();
                     }, 1000);
                     return;
                   }
                   
-                  if (currentStatus === 'FAILED') {
+                  if (currentStatus === 'FAILED' || currentStatus === 'REJECTED' || currentStatus === 'CANCELLED') {
                     setProcessingStep(3);
                     setProcessingMessage('Payment failed');
+                    setPhase('FAILED');
                     // Keep stepper visible to show failed state
                     Alert.alert('Error', 'Payment failed. Please try again.');
+                    
+                    // Reset processing state after failure to allow retry
+                    setTimeout(() => {
+                      setIsProcessing(false);
+                    }, 2000);
                     return;
                   }
                 }
@@ -652,34 +788,72 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                 await new Promise(resolve => setTimeout(resolve, 1200));
               } catch (error) {
                 console.error('Error checking payment status:', error);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 2000)); // backoff on transient errors
               }
             }
             
             // Timeout
             setProcessingStep(3);
             setProcessingMessage('Timeout waiting for payment confirmation');
+            setPhase('FAILED');
             // Keep stepper visible to show timeout state
             Alert.alert('Timeout', 'Payment is taking longer than expected. Please check your transaction history.');
+            
+            // Reset processing state after timeout to allow retry
+            setTimeout(() => {
+              setIsProcessing(false);
+            }, 3000);
           };
           
           pollStatus();
         } else {
           setProcessingStep(3);
           setProcessingMessage('Payment failed');
+          setPhase('FAILED');
           // Keep stepper visible to show failed state
           Alert.alert('Error', result.error || 'Payment failed. Please try again.');
+          
+          // Reset processing state after failure to allow retry
+          setTimeout(() => {
+            setIsProcessing(false);
+          }, 2000);
         }
       }
 
     } catch (error) {
-      console.error('Mobile money action error:', error);
+      console.error('💥 Mobile money action error:', error);
+      
+      // Enhanced error categorization
+      const hint = [
+        `baseURL=${MTN_BASE_URL || 'undefined'}`,
+        `platform=${Platform.OS}`,
+        `message=${error?.message || 'Unknown error'}`
+      ].join(' | ');
+      console.log('ERROR Mobile money action:', hint);
+
+      // User-friendly error categorization
+      let userMessage = 'Payment failed. Please try again.';
+      if (error?.message?.includes('Network request failed')) {
+        userMessage = 'Connection failed. Check network/URL/TLS config.';
+      } else if (error?.message?.includes('No internet connection')) {
+        userMessage = 'No internet connection. Please check your network.';
+      } else if (error?.message?.includes('HTTPS connectivity failed')) {
+        userMessage = 'Network configuration issue. Please try again.';
+      }
+
       setProcessingStep(3);
       setProcessingMessage('Payment failed');
-      // Keep stepper visible to show failed state
-      Alert.alert('Error', isDeposit ? 'Deposit failed. Please try again.' : 'Payment failed. Please try again.');
+      setPhase('FAILED');
+      Alert.alert('Error', userMessage);
+      
+      handleError(error, 'in mobile money action');
     } finally {
-      // Don't set isProcessing to false - keep stepper visible
+      // Reset processing state on error to allow retry
+      if (error) {
+        setTimeout(() => {
+          setIsProcessing(false);
+        }, 2000); // Give user time to see the error message
+      }
     }
   };
 
@@ -695,8 +869,35 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     setTransactionId(null);
     setIsProcessing(false);
     setStepProgress([0, 0, 0]);
+    setErrorMessage(null);
+    setShowErrorModal(false);
+    setPhase('IDLE');
     // Reset animations
     stepAnimations.forEach(anim => anim.setValue(0));
+  };
+
+  const handleError = (error, context = '') => {
+    console.error(`Mobile money error ${context}:`, error);
+    
+    let userFriendlyMessage = 'Something went wrong. Please try again.';
+    
+    if (error.message) {
+      if (error.message.includes('Network request failed')) {
+        userFriendlyMessage = 'Network connection failed. Please check your internet connection and try again.';
+      } else if (error.message.includes('timeout')) {
+        userFriendlyMessage = 'Request timed out. Please try again.';
+      } else if (error.message.includes('unauthorized')) {
+        userFriendlyMessage = 'Authentication failed. Please try again.';
+      } else {
+        userFriendlyMessage = error.message;
+      }
+    }
+    
+    setErrorMessage(userFriendlyMessage);
+    setShowErrorModal(true);
+    setProcessingStep(3);
+    setProcessingMessage('Payment failed');
+    setPhase('FAILED');
   };
 
   const completeProcessing = () => {
@@ -796,23 +997,23 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     return (
     <View style={styles.darkContainer}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <SafeAreaView style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => onClose ? onClose() : navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+              <SafeAreaView style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => onClose ? onClose() : navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
           {isDeposit ? 'Add via Mobile Money' : 'Send Money via Mobile Money'}
-        </Text>
-        <View style={styles.placeholder} />
-      </SafeAreaView>
+          </Text>
+          <View style={styles.placeholder} />
+        </SafeAreaView>
 
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+              <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.contentContainer}
@@ -897,12 +1098,12 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                       <Text style={styles.currencySymbolFlag}>{selectedCurrencyObj?.flag || '🇺🇸'}</Text>
                       <Text style={styles.integratedAmountCurrency}>{selectedCurrencyObj?.symbol || '$'}</Text>
                     </TouchableOpacity>
-                    <TextInput
+                <TextInput
                       ref={amountInputRef}
                       style={styles.integratedAmountInputField}
-                      placeholder="0.00"
-                      placeholderTextColor="rgba(255,255,255,0.6)"
-                      keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  keyboardType="numeric"
                       value={localAmount}
                       onChangeText={(text) => {
                         setLocalAmount(text);
@@ -911,7 +1112,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                       maxLength={10}
                     />
                   </TouchableOpacity>
-                </View>
+              </View>
 
                 {/* Live FX Preview */}
                 <Text style={{
@@ -937,7 +1138,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                     <View style={styles.liveRateIndicator}>
                       <View style={styles.liveRateDot} />
                       <Text style={styles.liveRateText}>Live rates</Text>
-                    </View>
+                  </View>
                     
                     {/* Search Bar */}
                     <View style={styles.currencySearchContainer}>
@@ -960,7 +1161,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                           <Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.6)" />
                         </TouchableOpacity>
                       )}
-                    </View>
+                  </View>
                     
                     {/* Currency Options */}
                     <ScrollView style={styles.currencyOptionsList} showsVerticalScrollIndicator={false}>
@@ -981,6 +1182,10 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                             setSelectedCurrency(opt.code);
                             setShowCurrencyDropdown(false);
                             setCurrencySearchQuery('');
+                            // Persist currency preference
+                            try { 
+                              AsyncStorage.setItem('preferredCurrency', opt.code); 
+                            } catch {}
                           }}
                           activeOpacity={0.7}
                         >
@@ -989,7 +1194,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                             <View style={styles.currencyOptionTextContainer}>
                               <Text style={styles.currencyOptionCode}>{opt.code}</Text>
                               <Text style={styles.currencyOptionCountry}>{opt.country}</Text>
-                            </View>
+                </View>
                             <Text style={styles.currencyOptionSymbol}>{opt.symbol}</Text>
                           </View>
                           {selectedCurrency === opt.code && (
@@ -1021,20 +1226,20 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                                   <Text style={styles.phoneName}>{selectedVerifiedPhone.name}</Text>
                                   <Text style={styles.phoneNumber}>{selectedVerifiedPhone.number}</Text>
                                   <Text style={styles.phoneProvider}>{selectedVerifiedPhone.provider}</Text>
-                                </View>
+                          </View>
                                 <View style={styles.verifiedBadge}>
                                   <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                                   <Text style={styles.verifiedText}>Verified</Text>
-                                </View>
-                              </View>
+                          </View>
+                          </View>
                             ) : (
                               <View style={styles.phoneSelectorPlaceholder}>
                                 <Ionicons name="call-outline" size={20} color="rgba(255,255,255,0.6)" />
                                 <Text style={styles.phoneSelectorPlaceholderText}>
                                   Select verified phone number
                                 </Text>
-                              </View>
-                            )}
+                        </View>
+                      )}
                             <Ionicons name="chevron-down" size={20} color="rgba(255,255,255,0.6)" />
                           </TouchableOpacity>
 
@@ -1104,88 +1309,50 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
 
                       {/* Processing Stepper */}
             {isProcessing && (
-              <View style={styles.processingContainer}>
-                <View style={styles.stepperContainer}>
-                  <View style={styles.stepItem}>
-                    <View style={[styles.step, processingStep >= 1 && styles.stepActive]}>
-                      <Animated.View 
-                        style={[
-                          styles.stepBar, 
-                          { 
-                            width: stepAnimations[0].interpolate({
-                              inputRange: [0, 100],
-                              outputRange: ['0%', '100%'],
-                              extrapolate: 'clamp',
-                            })
-                          }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={[styles.stepLabel, processingStep >= 1 && styles.stepLabelActive]}>
-                      Creating payment request
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.stepItem}>
-                    <View style={[styles.step, processingStep >= 2 && styles.stepActive]}>
-                      <Animated.View 
-                        style={[
-                          styles.stepBar, 
-                          { 
-                            width: stepAnimations[1].interpolate({
-                              inputRange: [0, 100],
-                              outputRange: ['0%', '100%'],
-                              extrapolate: 'clamp',
-                            })
-                          }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={[styles.stepLabel, processingStep >= 2 && styles.stepLabelActive]}>
-                      Awaiting MTN approval
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.stepItem}>
-                    <View style={[styles.step, processingStep >= 3 && styles.stepActive]}>
-                      <Animated.View 
-                        style={[
-                          styles.stepBar, 
-                          { 
-                            width: stepAnimations[2].interpolate({
-                              inputRange: [0, 100],
-                              outputRange: ['0%', '100%'],
-                              extrapolate: 'clamp',
-                            })
-                          }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={[styles.stepLabel, processingStep >= 3 && styles.stepLabelActive]}>
-                      Funds available
-                    </Text>
-                  </View>
+              <Animated.View style={[styles.processingContainer, { opacity: processingFadeAnim }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <ActivityIndicator size="small" />
+                  <Text style={styles.processingMessage}>{processingMessage || 'Processing…'}</Text>
                 </View>
-                <Text style={styles.processingMessage}>{processingMessage}</Text>
+                
+                {/* Progress Step Bar */}
+                <View style={styles.stepBarContainer}>
+                  <StepBar currentStep={Math.max(0, processingStep - 1)} />
+                </View>
+                
                 {transactionId && (
                   <Text style={styles.transactionIdText}>Transaction ID: {transactionId}</Text>
                 )}
                 {processingStep === 3 && (
                   <View style={styles.completionIndicator}>
-                    <Ionicons 
-                      name={processingMessage.includes('failed') || processingMessage.includes('timeout') ? "close-circle" : "checkmark-circle"} 
-                      size={20} 
-                      color={processingMessage.includes('failed') || processingMessage.includes('timeout') ? "#ef4444" : "#10b981"} 
-                    />
-                    <Text style={[
-                      styles.completionText,
-                      { color: processingMessage.includes('failed') || processingMessage.includes('timeout') ? "#ef4444" : "#10b981" }
-                    ]}>
-                      {processingMessage.includes('failed') || processingMessage.includes('timeout') ? 'Failed' : 'Completed'}
-                    </Text>
+                    {(() => {
+                      const pm = (processingMessage || '').toLowerCase();
+                      const isBad = pm.includes('failed') || pm.includes('timeout');
+                      return (
+                        <>
+                          <Ionicons name={isBad ? 'close-circle' : 'checkmark-circle'} size={20} color={isBad ? '#ef4444' : '#10b981'} />
+                          <Text style={[styles.completionText, { color: isBad ? '#ef4444' : '#10b981' }]}>
+                            {isBad ? 'Failed' : 'Completed'}
+                          </Text>
+                          {isBad && (
+                            <TouchableOpacity
+                              style={styles.retryButton}
+                              onPress={() => {
+                                setIsProcessing(false);
+                                setPhase('IDLE');
+                                setProcessingStep(0);
+                                setProcessingMessage('');
+                              }}
+                            >
+                              <Text style={styles.retryButtonText}>Try Again</Text>
+                            </TouchableOpacity>
+                          )}
+                        </>
+                      );
+                    })()}
                   </View>
                 )}
-              </View>
+              </Animated.View>
             )}
 
                       {/* Send Button */}
@@ -1196,16 +1363,32 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                   (!amount || !selectedVerifiedPhone || !selectedProvider || isProcessing) && styles.sendButtonDisabled
                 ]}
                 onPress={() => {
-                  console.log('🔘 Add Money button pressed');
-                  console.log('📊 Button state:', { amount, selectedVerifiedPhone, selectedProvider, isProcessing });
-                  setShowConfirmationModal(true);
-                  console.log('✅ Confirmation modal should be showing');
+                  // Check if button should be disabled
+                  if (isProcessing || !amount || !selectedVerifiedPhone || !selectedProvider) {
+                    return;
+                  }
+                  
+                  try {
+                    // Navigate to confirmation screen
+                    navigation.replace('MobileMoneyConfirm', {
+                      amount,
+                      selectedCurrency,
+                      selectedProvider,
+                      selectedVerifiedPhone,
+                      recipientName,
+                      isDeposit,
+                      fees,
+                      totalAmount
+                    });
+                  } catch (error) {
+                    console.error('Navigation error:', error);
+                  }
                 }}
                 disabled={isProcessing || !amount || !selectedVerifiedPhone || !selectedProvider}
               >
                 {isProcessing ? (
                   <View style={styles.processingButtonContent}>
-                    <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color="#ffffff" />
                     <Text style={styles.sendButtonText}>Processing...</Text>
                   </View>
                 ) : (
@@ -1241,117 +1424,6 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
           </Animated.View>
         )}
 
-
-              {/* Confirmation Modal */}
-        <Modal
-          visible={showConfirmationModal}
-          animationType="fade"
-          transparent={true}
-          onRequestClose={() => setShowConfirmationModal(false)}
-          onShow={() => console.log('📱 Confirmation Modal is now visible')}
-        >
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={20} tint="dark" style={styles.modalContent}>
-                          <View style={styles.confirmationHeader}>
-              <Ionicons name="checkmark-circle" size={64} color="#10b981" />
-              <Text style={styles.confirmationTitle}>
-                {isDeposit ? 'Confirm Deposit' : 'Confirm Payment'}
-              </Text>
-            </View>
-              
-              <View style={styles.confirmationDetails}>
-                <View style={styles.confirmationRow}>
-                  <Text style={styles.confirmationLabel}>Provider:</Text>
-                  <Text style={styles.confirmationValue}>
-                    {selectedProvider?.name}
-                  </Text>
-                </View>
-                
-                                  <View style={styles.confirmationRow}>
-                    <Text style={styles.confirmationLabel}>Amount:</Text>
-                    <Text style={styles.confirmationValue}>
-                      {selectedCurrency === 'USD' ? '$' : 
-                       selectedCurrency === 'EUR' ? '€' : 
-                       selectedCurrency === 'GHS' ? '₵' : 
-                       selectedCurrency === 'AED' ? 'د.إ' : 
-                       selectedCurrency === 'NGN' ? '₦' : '₵'}{parseFloat(amount).toFixed(2)}
-                    </Text>
-                  </View>
-                
-                <View style={styles.confirmationRow}>
-                  <Text style={styles.confirmationLabel}>Fees:</Text>
-                  <Text style={styles.confirmationValue}>
-                    {selectedCurrency === 'USD' ? '$' : 
-                     selectedCurrency === 'EUR' ? '€' : 
-                     selectedCurrency === 'GHS' ? '₵' : 
-                     selectedCurrency === 'AED' ? 'د.إ' : 
-                     selectedCurrency === 'NGN' ? '₦' : '₵'}{fees.toFixed(2)}
-                  </Text>
-                </View>
-                
-                                  <View style={styles.confirmationRow}>
-                    <Text style={styles.confirmationLabel}>Total:</Text>
-                    <Text style={[styles.confirmationValue, { color: '#1e40af', fontWeight: 'bold' }]}>
-                      {selectedCurrency === 'USD' ? '$' : 
-                       selectedCurrency === 'EUR' ? '€' : 
-                       selectedCurrency === 'GHS' ? '₵' : 
-                       selectedCurrency === 'AED' ? 'د.إ' : 
-                       selectedCurrency === 'NGN' ? '₦' : '₵'}{totalAmount.toFixed(2)}
-                    </Text>
-                  </View>
-                
-                                  {!isDeposit && (
-                    <View style={styles.confirmationRow}>
-                      <Text style={styles.confirmationLabel}>To:</Text>
-                      <Text style={styles.confirmationValue}>
-                        {isDeposit ? 'Your Wallet' : `${selectedVerifiedPhone?.name} (${selectedVerifiedPhone?.number})`}
-                      </Text>
-                    </View>
-                  )}
-                  {isDeposit && (
-                    <View style={styles.confirmationRow}>
-                      <Text style={styles.confirmationLabel}>From:</Text>
-                      <Text style={styles.confirmationValue}>
-                        John Doe (+233 24 123 4567)
-                      </Text>
-                    </View>
-                  )}
-              </View>
-              
-              <View style={styles.confirmationButtons}>
-                <TouchableOpacity
-                  style={[styles.confirmationButton, styles.cancelButton]}
-                  onPress={() => {
-                    setShowConfirmationModal(false);
-                    resetProcessingState();
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.confirmationButton, styles.confirmButton]}
-                  onPress={handleMobileMoneyAction}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <View style={styles.processingButtonContent}>
-                      <ActivityIndicator size="small" color="#ffffff" />
-                      <Text style={styles.confirmButtonText}>Processing...</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.confirmButtonText}>
-                      Confirm and Send
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          </View>
-        </Modal>
-
         {/* Phone Selector Modal */}
         <Modal
           visible={showPhoneSelector}
@@ -1364,14 +1436,14 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
               <View style={styles.phoneSelectorModal}>
                 <View style={styles.phoneSelectorHeader}>
                   <Text style={styles.phoneSelectorTitle}>Select Phone Number</Text>
-                  <TouchableOpacity
+                <TouchableOpacity
                     onPress={() => setShowPhoneSelector(false)}
                     style={styles.phoneSelectorCloseButton}
-                  >
+                >
                     <Ionicons name="close" size={24} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-
+                </TouchableOpacity>
+              </View>
+              
                 <ScrollView style={styles.phoneSelectorList}>
                   {verifiedPhoneNumbers.map((phone, index) => (
                     <TouchableOpacity
@@ -1397,8 +1469,51 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                         </View>
                       </View>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                ))}
+              </ScrollView>
+              </View>
+            </BlurView>
+          </View>
+        </Modal>
+
+        {/* Error Modal */}
+        <Modal
+          visible={showErrorModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowErrorModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <BlurView intensity={20} tint="dark" style={styles.modalContent}>
+              <View style={styles.errorHeader}>
+                <Ionicons name="alert-circle" size={64} color="#ef4444" />
+                <Text style={styles.errorTitle}>Payment Failed</Text>
+                <Text style={styles.errorMessage}>
+                  {errorMessage || 'Something went wrong. Please try again.'}
+              </Text>
+            </View>
+              
+              <View style={styles.errorButtons}>
+                <TouchableOpacity
+                  style={[styles.errorButton, styles.retryButton]}
+                  onPress={() => {
+                    setShowErrorModal(false);
+                    resetProcessingState();
+                  }}
+                >
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.errorButton, styles.cancelErrorButton]}
+                  onPress={() => {
+                    setShowErrorModal(false);
+                    resetProcessingState();
+                    navigation.goBack();
+                  }}
+                >
+                  <Text style={styles.cancelErrorButtonText}>Go Back</Text>
+                </TouchableOpacity>
               </View>
             </BlurView>
           </View>
@@ -2172,6 +2287,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(30, 64, 175, 0.3)',
   },
+  stepBarContainer: {
+    marginVertical: 16,
+    alignItems: 'center',
+  },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -2242,6 +2361,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Typography.fontFamily,
     fontWeight: '600',
+  },
+  retryButton: {
+    backgroundColor: '#1e40af',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+    alignSelf: 'center',
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: Typography.fontFamily,
+  },
+  // Error Modal Styles
+  errorHeader: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: 16,
+    marginBottom: 12,
+    fontFamily: Typography.fontFamily,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    lineHeight: 24,
+    fontFamily: Typography.fontFamily,
+  },
+  errorButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  errorButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#1e40af',
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: Typography.fontFamily,
+  },
+  cancelErrorButton: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  cancelErrorButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: Typography.fontFamily,
   },
 });
 

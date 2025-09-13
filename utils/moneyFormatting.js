@@ -73,3 +73,4 @@ export const formatFeeAdjacency = (fee, total, currency) => {
   return `Fee ${formatMoney(fee, currency)} • Total ${formatMoney(total, currency)}`;
 };
 
+

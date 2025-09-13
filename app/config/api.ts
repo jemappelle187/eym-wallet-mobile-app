@@ -1,24 +1,18 @@
-export const resolveApiBase = () => {
-  // Use LAN IP for physical devices and simulators
-  // This ensures the mobile app can reach the backend from any device on the same network
-  return 'http://192.168.178.174:4000';
-  
-  // Fallback to dynamic resolution if needed (commented out for now)
-  // try {
-  //   const Constants = require('expo-constants').default;
-  //   const host =
-  //     (Constants?.expoConfig?.hostUri ||
-  //       Constants?.manifest2?.extra?.expoGo?.debuggerHost ||
-  //       Constants?.manifest?.debuggerHost ||
-  //       '')
-  //       .split(':')[0];
-  //   if (host) return `http://${host}:4000`;
-  // } catch (_) {}
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+// import { validateCircleKey, debugCircleConfig } from '../../utils/circleDebug';
 
-  // const rn = require('react-native');
-  // if (rn.Platform.OS === 'android') return 'http://10.0.2.2:4000';
-  // if (rn.Platform.OS === 'ios') return 'http://127.0.0.1:4000';
-  // return 'http://127.0.0.1:4000';
+export const resolveApiBase = () => {
+  // Force real Circle API - no mock server fallback
+  const useMock = Constants.expoConfig?.extra?.EXPO_PUBLIC_USE_MOCK_API === 'true';
+  
+  if (useMock) {
+    // Only use mock for development if explicitly enabled
+    return Constants.expoConfig?.extra?.EXPO_PUBLIC_MOCK_API_BASE || 'http://127.0.0.1:4000';
+  }
+  
+  // Always use real Circle API
+  return Constants.expoConfig?.extra?.EXPO_PUBLIC_CIRCLE_API_BASE || 'https://api-sandbox.circle.com/v1';
 };
 
 export const API_BASE = resolveApiBase();
@@ -26,8 +20,66 @@ export const API_BASE = resolveApiBase();
 // Demo mode flag: when true, avoid calling non-existent backend endpoints
 export const DEMO_MODE = false;
 
-// Provide a default secret to satisfy imports in JS files
-undefined
+// Circle API credentials from environment
+export const CIRCLE_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_CIRCLE_API_KEY || '';
+export const WEBHOOK_SECRET = Constants.expoConfig?.extra?.EXPO_PUBLIC_WEBHOOK_SECRET || '';
+
+// Validate Circle API key on startup - temporarily disabled
+// if (CIRCLE_API_KEY) {
+//   try {
+//     validateCircleKey(CIRCLE_API_KEY);
+//     debugCircleConfig(API_BASE, CIRCLE_API_KEY);
+//   } catch (error) {
+//     console.error('[Circle] ❌ API key validation failed:', error.message);
+//   }
+// } else {
+//   console.error('[Circle] ❌ Missing EXPO_PUBLIC_CIRCLE_API_KEY');
+// }
+
+// Circle API client function with better error handling
+export async function circleRequest(endpoint: string, options: RequestInit = {}) {
+  const url = `${API_BASE}${endpoint}`;
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${CIRCLE_API_KEY}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    const text = await response.text();
+    const asJson = contentType.includes('application/json') 
+      ? (() => { 
+          try { 
+            return JSON.parse(text); 
+          } catch { 
+            return null; 
+          } 
+        })()
+      : null;
+
+    if (!response.ok) {
+      const details = asJson?.message || text.slice(0, 200);
+      throw new Error(`Circle ${response.status}: ${details}`);
+    }
+
+    if (!asJson) {
+      throw new Error(`Circle returned non-JSON: ${text.slice(0, 120)}`);
+    }
+    
+    return asJson;
+  } catch (error) {
+    // Better error messages for debugging
+    const hint = url.includes('127.0.0.1') || url.includes('localhost') ? 
+      'Is the mock server running? (Try `npm run mock`)' :
+      'Circle API unreachable. Check API_BASE, API_KEY, and network.';
+    throw new Error(`${error?.message || error} — ${hint}`);
+  }
+}
 
 // Lightweight public FX quote fallback using Frankfurter API
 // API: https://www.frankfurter.app/docs/

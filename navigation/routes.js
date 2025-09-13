@@ -1,9 +1,9 @@
 // Route name constants to prevent typos and ensure consistency
 export const ROUTES = {
   // Bank Transfer Flow
-  BANK_AMOUNT: 'BankTransferAmount',
-  BANK_CONFIRM: 'BankTransferConfirm',
-  BANK_PROCESSING: 'BankTransferProcessing',
+  BANK_AMOUNT: 'BankAmount',
+  BANK_CONFIRM: 'BankConfirm',
+  BANK_PROCESSING: 'BankProcessing',
   
   // Other common routes
   HOME: 'HomeDashboard',
@@ -29,3 +29,4 @@ export const ROUTES = {
 };
 
 export default ROUTES;
+

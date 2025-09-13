@@ -21,8 +21,10 @@ const StepBar = ({ currentStep = 0 }) => {
   // Pulse animation for active step (separate from glow)
   const pulseValue = useRef(new Animated.Value(1)).current;
 
-  // Glow animation for completed steps (separate from pulse)
-  const glowValue = useRef(new Animated.Value(0)).current;
+  // Individual glow animations for each step (separate from pulse)
+  const glowValues = useRef(
+    steps.map(() => new Animated.Value(0))
+  ).current;
 
   // Animate steps when currentStep changes
   useEffect(() => {
@@ -77,18 +79,17 @@ const StepBar = ({ currentStep = 0 }) => {
     }
   }, [currentStep, pulseValue]);
 
-  // Start glow animation for completed steps
+  // Start glow animation for each completed step
   useEffect(() => {
-    if (currentStep >= 2) {
-      Animated.timing(glowValue, {
-        toValue: 1,
+    steps.forEach((_, index) => {
+      const isCompleted = index < currentStep;
+      Animated.timing(glowValues[index], {
+        toValue: isCompleted ? 1 : 0,
         duration: 600,
         useNativeDriver: false,
       }).start();
-    } else {
-      glowValue.setValue(0);
-    }
-  }, [currentStep, glowValue]);
+    });
+  }, [currentStep, glowValues]);
 
   return (
     <View style={styles.container}>
@@ -132,17 +133,17 @@ const StepBar = ({ currentStep = 0 }) => {
                   // Glow effect for completed steps (useNativeDriver: false)
                   shadowColor: index < currentStep ? '#10b981' : 'transparent',
                   shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: glowValue.interpolate({
+                  shadowOpacity: glowValues[index].interpolate({
                     inputRange: [0, 1],
                     outputRange: [0, 0.6],
                     extrapolate: 'clamp',
                   }),
-                  shadowRadius: glowValue.interpolate({
+                  shadowRadius: glowValues[index].interpolate({
                     inputRange: [0, 1],
                     outputRange: [0, 8],
                     extrapolate: 'clamp',
                   }),
-                  elevation: glowValue.interpolate({
+                  elevation: glowValues[index].interpolate({
                     inputRange: [0, 1],
                     outputRange: [0, 8],
                     extrapolate: 'clamp',
@@ -161,7 +162,7 @@ const StepBar = ({ currentStep = 0 }) => {
               >
                 {index < currentStep ? (
                   <Ionicons 
-                    name="checkmark" 
+                    name="checkmark-circle" 
                     size={16} 
                     color="#ffffff" 
                   />

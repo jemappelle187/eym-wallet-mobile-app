@@ -46,17 +46,29 @@ class MTNApiService {
       });
 
       const ct = response.headers.get('content-type') || '';
-      const payload = ct.includes('application/json') ? await response.json() : await response.text();
-      
-      if (!response.ok) {
-        const msg = typeof payload === 'string' ? payload : (payload.error || payload.message || 'Failed to send money');
-        throw new Error(msg);
+      const bodyText = await response.text();
+      let body = {};
+      try { 
+        body = bodyText ? JSON.parse(bodyText) : {}; 
+      } catch { 
+        body = { raw: bodyText }; 
       }
-      
-      return payload;
+
+      return {
+        success: response.ok,
+        httpStatus: response.status,
+        data: body,
+        referenceId: body.referenceId || body.data?.referenceId,
+        error: response.ok ? null : (body?.message || `HTTP ${response.status}`)
+      };
     } catch (error) {
       console.error('[MTN API] Send money error:', error);
-      throw error;
+      return { 
+        success: false, 
+        httpStatus: 0, 
+        data: null, 
+        error: error?.message || 'network-failure' 
+      };
     }
   }
 
@@ -69,17 +81,28 @@ class MTNApiService {
         headers: { 'Accept': 'application/json' }
       });
       const ct = response.headers.get('content-type') || '';
-      const payload = ct.includes('application/json') ? await response.json() : await response.text();
-      
-      if (!response.ok) {
-        const msg = typeof payload === 'string' ? payload : (payload.error || payload.message || 'Failed to get transaction status');
-        throw new Error(msg);
+      const bodyText = await response.text();
+      let body = {};
+      try { 
+        body = bodyText ? JSON.parse(bodyText) : {}; 
+      } catch { 
+        body = { raw: bodyText }; 
       }
-      
-      return payload;
+
+      return {
+        success: response.ok,
+        httpStatus: response.status,
+        data: body,         // expect body.status when available
+        error: response.ok ? null : (body?.message || `HTTP ${response.status}`)
+      };
     } catch (error) {
       console.error('[MTN API] Transaction status error:', error);
-      throw error;
+      return { 
+        success: false, 
+        httpStatus: 0, 
+        data: null, 
+        error: error?.message || 'network-failure' 
+      };
     }
   }
 

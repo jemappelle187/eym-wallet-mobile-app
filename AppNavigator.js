@@ -21,6 +21,7 @@ import LanguageSelectorScreen from './screens/LanguageSelectorScreen';
 // import AutoConvertTestScreen from './app/screens/AutoConvertTestScreen';
 import ConnectedBankAccountsScreen from './screens/ConnectedBankAccountsScreen';
 import MobileMoneyPaymentScreen from './screens/MobileMoneyPaymentScreen';
+import MobileMoneyConfirmScreen from './screens/MobileMoneyConfirmScreen';
 import BankTransferPaymentScreen from './screens/BankTransferPaymentScreen';
 import BankTransferAmountScreen from './screens/BankTransferAmountScreen';
 import BankTransferConfirmScreen from './screens/BankTransferConfirmScreen';
@@ -109,6 +110,11 @@ const HomeTabNavigator = () => {
           options={{ tabBarStyle: { display: 'none' } }}
         />
         <HomeTabStack.Screen 
+          name="MobileMoneyConfirm" 
+          component={MobileMoneyConfirmScreen}
+          options={{ tabBarStyle: { display: 'none' } }}
+        />
+        <HomeTabStack.Screen 
           name={ROUTES.BANK_AMOUNT} 
           component={BankTransferAmountScreen}
           options={{ tabBarStyle: { display: 'none' } }}
@@ -161,7 +167,7 @@ function TabNavigator() {
   const getTabBarVisibility = (route) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeDashboard';
     // List of screens in HomeTabNavigator where tabs should be hidden
-    const screensWithoutTabs = ['ProfileSettings', 'Deposit', 'Withdraw', 'PayInStore', 'MobileMoneyPayment', ROUTES.BANK_AMOUNT, ROUTES.BANK_CONFIRM, ROUTES.BANK_PROCESSING];
+    const screensWithoutTabs = ['ProfileSettings', 'Deposit', 'Withdraw', 'PayInStore', 'MobileMoneyPayment', 'MobileMoneyConfirm', ROUTES.BANK_AMOUNT, ROUTES.BANK_CONFIRM, ROUTES.BANK_PROCESSING];
     console.log('🔍 TabBar Visibility Check:', { routeName, shouldHide: screensWithoutTabs.includes(routeName) });
     if (screensWithoutTabs.includes(routeName)) {
       return 'none';

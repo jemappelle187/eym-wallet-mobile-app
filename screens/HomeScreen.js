@@ -49,7 +49,7 @@ import PayPalPaymentScreen from './PayPalPaymentScreen';
 import SendModal from './SendModal';
 import ReceiveModal from './ReceiveModal';
 import WithdrawModal from './WithdrawModal';
-import { API_BASE, WEBHOOK_SECRET, getFxQuote, DEMO_MODE } from '../app/config/api';
+import { API_BASE, WEBHOOK_SECRET, getFxQuote, DEMO_MODE, circleRequest, CIRCLE_API_KEY } from '../app/config/api';
 import { ROUTES } from '../navigation/routes';
 
 const { width, height } = Dimensions.get('window');
@@ -234,9 +234,11 @@ const useAutoConversion = () => {
       console.log('📱 Network test starting...');
       
       const startTime = Date.now();
-      const response = await fetch(`${API_BASE}/health`, {
+      // Test Circle API configuration endpoint instead of health check
+      const response = await fetch(`${API_BASE}/configuration`, {
         method: 'GET',
         headers: {
+          'Authorization': `Bearer ${CIRCLE_API_KEY}`,
           'Accept': 'application/json',
           'User-Agent': 'EYM-Wallet-App/1.0'
         }
@@ -248,9 +250,24 @@ const useAutoConversion = () => {
       console.log('🔗 Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('✅ API connection successful:', data);
-        return true;
+        // Defensive JSON parsing - handle both JSON and text responses
+        const contentType = response.headers.get('content-type') || '';
+        
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          console.log('✅ API connection successful (JSON):', data);
+          return true;
+        } else {
+          // Handle plain text responses (like "ok")
+          const text = await response.text();
+          if (text.trim().toLowerCase() === 'ok') {
+            console.log('✅ API connection successful (text):', text);
+            return true;
+          } else {
+            console.log('⚠️ Unexpected text response:', text);
+            return true; // Still consider it successful if server responds
+          }
+        }
       } else {
         const errorText = await response.text();
         console.error('❌ API connection failed:', response.status, errorText);
@@ -305,13 +322,12 @@ const useAutoConversion = () => {
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       logConversion(`Calling Circle API for ${amount} ${currency} conversion...`, 'info');
-      console.log('🌐 API URL:', `${API_BASE}/v1/deposits/webhook`);
+      console.log('🌐 API URL:', `${API_BASE}/deposits/webhook`);
       
-      // Call your real Circle API using smart configuration
-      const response = await fetch(`${API_BASE}/v1/deposits/webhook`, {
+      // Call real Circle API using the circleRequest function
+      const result = await circleRequest('/deposits/webhook', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'x-webhook-secret': WEBHOOK_SECRET
         },
         body: JSON.stringify({
@@ -322,12 +338,6 @@ const useAutoConversion = () => {
         })
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Circle API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
       console.log('✅ Circle API response:', result);
       
       if (!result.data || result.data.status !== 'converted') {

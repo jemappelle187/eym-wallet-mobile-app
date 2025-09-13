@@ -1,47 +1,50 @@
 {
   "expo": {
-    "name": "sendnreceive-app",
-    "slug": "sendnreceive-app",
+    "name": "EYM Wallet",
+    "slug": "eym-wallet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "jsEngine": "hermes",
-      "bundleIdentifier": "com.jemappelle187.sendnreceiveapp",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSFaceIDUsageDescription": "SendNReceive uses FaceID to securely authenticate you and protect your wallet."
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            },
+            "192.168.178.174": {
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            },
+            "api.mtn.com": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSRequiresCertificateTransparency": false
+            }
+          }
+        }
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "jsEngine": "hermes",
-      "package": "com.jemappelle187.sendnreceiveapp"
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-secure-store"
-    ],
-    "privacy": "public",
-    "privacyPolicyUrl": "https://example.com/privacy-policy",
-    "extra": {
-      "eas": {
-        "projectId": "9afa6546-591d-49a7-8e28-4cb54938dd65"
-      }
     }
   }
 }
