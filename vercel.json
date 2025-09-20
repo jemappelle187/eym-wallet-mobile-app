@@ -1,0 +1,13 @@
+{
+  "build": {
+    "env": {
+      "EXPO_PUBLIC_CIRCLE_API_BASE": "https://api.circle.com/v1/w3s",
+      "EXPO_PUBLIC_AUTO_CONVERT_API_BASE": "https://your-auto-convert-api.vercel.app",
+      "EXPO_PUBLIC_USE_MOCK_API": "false"
+    }
+  },
+  "env": {
+    "EXPO_PUBLIC_CIRCLE_API_KEY": "@circle-api-key",
+    "EXPO_PUBLIC_WEBHOOK_SECRET": "@webhook-secret"
+  }
+}

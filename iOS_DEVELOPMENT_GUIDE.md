@@ -103,3 +103,10 @@ If you encounter issues:
 3. Verify you're in the correct directory (`sendnreceive-app/`)
 4. Ensure Metro is running from the app directory, not the monorepo root
 
+
+
+
+
+
+
+

@@ -38,3 +38,9 @@ export default function usePlaidLink() {
   return { linking, open };
 }
 
+
+
+
+
+
+

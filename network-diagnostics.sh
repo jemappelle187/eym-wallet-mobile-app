@@ -46,3 +46,9 @@ curl -s -o /dev/null -w "Status: %{http_code}, Time: %{time_total}s\n" https://s
 echo -e "\n✅ Diagnostics complete!"
 echo "If api.mtn.com fails but sandbox.momodeveloper.mtn.com works,"
 echo "update MTN_BASE_URL to the correct endpoint."
+
+
+
+
+
+

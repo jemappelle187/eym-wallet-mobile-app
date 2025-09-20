@@ -125,8 +125,8 @@ const ReceiveModal = ({ visible, onClose, currentCurrency, currentBalance, onCur
       setAmountError('Please enter a valid amount');
       return;
     }
-    if (numValue > 10000) {
-      setAmountError('Maximum amount is $10,000');
+    if (numValue > 50000) {
+      setAmountError('Maximum amount is $50,000');
       return;
     }
     setAmountError('');
@@ -1002,6 +1002,11 @@ const styles = StyleSheet.create({
 });
 
 export default ReceiveModal;
+
+
+
+
+
 
 
 

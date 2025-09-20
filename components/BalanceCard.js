@@ -182,7 +182,7 @@ const BalanceCard = ({ balances = [], onCurrencyChange, onActionPress, usdcBalan
                    'Currency'}
                 </Text>
               </View>
-              <TouchableOpacity style={[styles.eyeButton, {minWidth: 44, minHeight: 44}]} onPress={() => { Haptics.selectionAsync(); setShowBalance(v => !v); }} accessibilityLabel={showBalance ? 'Hide balance' : 'Show balance'}>
+              <TouchableOpacity style={[styles.eyeButton, {minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center'}]} onPress={() => { Haptics.selectionAsync(); setShowBalance(v => !v); }} accessibilityLabel={showBalance ? 'Hide balance' : 'Show balance'}>
                 <Ionicons name={showBalance ? 'eye-outline' : 'eye-off-outline'} size={20} color={Colors.textInverse} />
               </TouchableOpacity>
             </View>

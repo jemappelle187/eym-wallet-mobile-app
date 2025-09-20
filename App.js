@@ -1,13 +1,14 @@
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import { LogBox, NativeModules } from 'react-native';
+import { LogBox, NativeModules, View } from 'react-native';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { TransactionProvider } from './contexts/TransactionContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import AppNavigator from './AppNavigator';
+import CircleHealthBanner from './components/CircleHealthBanner';
 import { PAYMENT_CONFIG } from './utils/PaymentAPIs';
 
 // Silence only this warning in dev
@@ -40,7 +41,10 @@ export default function App() {
             <AuthProvider>
                 <TransactionProvider>
                   <NotificationProvider>
-                    <AppNavigator />
+                    <View style={{ flex: 1 }}>
+                      <CircleHealthBanner />
+                      <AppNavigator />
+                    </View>
                   </NotificationProvider>
                 </TransactionProvider>
             </AuthProvider>

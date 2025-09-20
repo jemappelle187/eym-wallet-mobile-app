@@ -89,7 +89,7 @@ export const MOBILE_MONEY_CONFIG = {
       daily: 5000,
       monthly: 50000,
       minAmount: 1,
-      maxAmount: 10000
+      maxAmount: 50000
     }
   },
   vodafone: {
@@ -106,7 +106,7 @@ export const MOBILE_MONEY_CONFIG = {
       daily: 5000,
       monthly: 50000,
       minAmount: 1,
-      maxAmount: 10000
+      maxAmount: 50000
     }
   },
   airtel: {
@@ -123,7 +123,7 @@ export const MOBILE_MONEY_CONFIG = {
       daily: 5000,
       monthly: 50000,
       minAmount: 1,
-      maxAmount: 10000
+      maxAmount: 50000
     }
   },
   mpesa: {
@@ -157,7 +157,7 @@ export const MOBILE_MONEY_CONFIG = {
       daily: 5000,
       monthly: 50000,
       minAmount: 1,
-      maxAmount: 10000
+      maxAmount: 50000
     }
   },
   // Global Mobile Money Providers
@@ -175,7 +175,7 @@ export const MOBILE_MONEY_CONFIG = {
       daily: 10000,
       monthly: 100000,
       minAmount: 1,
-      maxAmount: 10000
+      maxAmount: 50000
     }
   },
   wechat: {
@@ -209,7 +209,7 @@ export const MOBILE_MONEY_CONFIG = {
       daily: 5000,
       monthly: 50000,
       minAmount: 1,
-      maxAmount: 10000
+      maxAmount: 50000
     }
   },
   paypal: {

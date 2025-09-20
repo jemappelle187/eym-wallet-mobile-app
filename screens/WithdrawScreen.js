@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Modal, Scro
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Colors } from '../constants/Colors';
+import { Typography } from '../constants/Typography';
 
 const WithdrawScreen = ({ navigation, isModal, onClose }) => {
   const { colors = Colors } = useTheme();
@@ -240,19 +241,21 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#004AAD',
-    paddingTop: 50,
-    paddingBottom: 15,
-    paddingHorizontal: 15,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   backButton: {
     marginRight: 15,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: '#ffffff',
+    fontFamily: Typography.fontFamily,
   },
   content: {
     padding: 20,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -7,7 +8,6 @@ import {
   StyleSheet,
   Alert,
   Linking,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -336,6 +336,9 @@ const styles = StyleSheet.create({
 });
 
 export default TestAccountSetupScreen;
+
+
+
 
 
 

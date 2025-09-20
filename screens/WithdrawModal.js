@@ -126,8 +126,8 @@ const WithdrawModal = ({ visible, onClose, currentCurrency, currentBalance, onCu
       setAmountError('Please enter a valid amount');
       return;
     }
-    if (numValue > 10000) {
-      setAmountError('Maximum withdrawal is $10,000');
+    if (numValue > 50000) {
+      setAmountError('Maximum withdrawal is $50,000');
       return;
     }
     if (numValue > currentBalance) {

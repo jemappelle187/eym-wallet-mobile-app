@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, Linking } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, StatusBar, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -146,8 +147,8 @@ const PayPalPaymentScreen = ({ navigation, route, onClose }) => {
       return false;
     }
     
-    if (numAmount > 10000) {
-      Alert.alert('Amount Too High', 'Maximum transaction amount is $10,000.00.');
+    if (numAmount > 50000) {
+      Alert.alert('Amount Too High', 'Maximum transaction amount is $50,000.00.');
       return false;
     }
 
@@ -539,7 +540,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 40,
+    paddingBottom: 20,
     backgroundColor: 'rgba(15, 15, 35, 0.95)',
   },
   backButton: {
@@ -556,7 +558,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#ffffff',
     fontFamily: Typography.fontFamily,

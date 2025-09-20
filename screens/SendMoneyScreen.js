@@ -206,7 +206,7 @@ const SendMoneyScreen = ({ navigation }) => {
               <AmountInput
                 currency={selectedCurrency}
                 onAmountChange={setAmountData}
-                maxAmount={10000}
+                maxAmount={50000}
               />
 
               {/* Note Input with Floating Label */}

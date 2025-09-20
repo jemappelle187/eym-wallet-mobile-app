@@ -74,3 +74,10 @@ export const formatFeeAdjacency = (fee, total, currency) => {
 };
 
 
+
+
+
+
+
+
+

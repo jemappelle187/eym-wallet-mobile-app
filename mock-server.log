@@ -3,176 +3,74 @@
 💰 MTN API: http://localhost:4000/v1/momo/request-to-pay
 Press Ctrl+C to stop
 ✅ Health check requested
-✅ Health check requested
+📱 MTN API status requested
 💰 MTN API request-to-pay: {
-  amount: '100.00',
-  currency: 'GHS',
-  payerMsisdn: '233241234567',
+  amount: '100',
+  currency: 'USD',
+  payerMsisdn: '+233 24 123 4567',
   payerMessage: 'Mobile money deposit',
   payeeNote: 'Deposit to wallet'
 }
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-🔍 MTN API status check: TXN-1757707092827
-✅ Health check requested
+🔍 MTN API status check: TXN-1757875327885
+🔍 MTN API status check: TXN-1757875327885
+🔍 MTN API status check: TXN-1757875327885
 💰 MTN API request-to-pay: {
-  amount: '100.00',
+  amount: '100',
+  currency: 'USD',
+  payerMsisdn: '+233 24 123 4567',
+  payerMessage: 'Mobile money deposit',
+  payeeNote: 'Deposit to wallet'
+}
+🔍 MTN API status check: TXN-1757875353065
+🔍 MTN API status check: TXN-1757875353065
+🔍 MTN API status check: TXN-1757875353065
+💰 MTN API request-to-pay: {
+  amount: '100',
   currency: 'EUR',
-  payerMsisdn: '233241234567',
+  payerMsisdn: '+233 24 123 4567',
   payerMessage: 'Mobile money deposit',
   payeeNote: 'Deposit to wallet'
 }
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-🔍 MTN API status check: TXN-1757707928157
-✅ Health check requested
+🔍 MTN API status check: TXN-1757875381591
+🔍 MTN API status check: TXN-1757875381591
+🔍 MTN API status check: TXN-1757875381591
 💰 MTN API request-to-pay: {
-  amount: '100.00',
-  currency: 'EUR',
-  payerMsisdn: '233241234567',
+  amount: '100',
+  currency: 'USD',
+  payerMsisdn: '+233 24 123 4567',
   payerMessage: 'Mobile money deposit',
   payeeNote: 'Deposit to wallet'
 }
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-🔍 MTN API status check: TXN-1757708081688
-✅ Health check requested
-✅ Health check requested
+🔍 MTN API status check: TXN-1757875645690
+🔍 MTN API status check: TXN-1757875645690
+🔍 MTN API status check: TXN-1757875645690
 💰 MTN API request-to-pay: {
-  amount: '100.00',
+  amount: '100',
   currency: 'EUR',
-  payerMsisdn: '233241234567',
+  payerMsisdn: '+233 24 123 4567',
   payerMessage: 'Mobile money deposit',
   payeeNote: 'Deposit to wallet'
 }
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-🔍 MTN API status check: TXN-1757708665790
-✅ Health check requested
+🔍 MTN API status check: TXN-1757876825430
+🔍 MTN API status check: TXN-1757876825430
+🔍 MTN API status check: TXN-1757876825430
 💰 MTN API request-to-pay: {
-  amount: '100.00',
-  currency: 'EUR',
-  payerMsisdn: '233241234567',
+  amount: '100',
+  currency: 'USD',
+  payerMsisdn: '+233 24 123 4567',
   payerMessage: 'Mobile money deposit',
   payeeNote: 'Deposit to wallet'
 }
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-🔍 MTN API status check: TXN-1757708695140
-✅ Health check requested
+🔍 MTN API status check: TXN-1757876914132
+🔍 MTN API status check: TXN-1757876914132
+🔍 MTN API status check: TXN-1757876914132
 💰 MTN API request-to-pay: {
-  amount: '100.00',
-  currency: 'EUR',
-  payerMsisdn: '233241234567',
+  amount: '100',
+  currency: 'USD',
+  payerMsisdn: '+233 24 123 4567',
   payerMessage: 'Mobile money deposit',
   payeeNote: 'Deposit to wallet'
 }
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-🔍 MTN API status check: TXN-1757708782011
-✅ Health check requested
-💰 MTN API request-to-pay: {
-  amount: '100.00',
-  currency: 'EUR',
-  payerMsisdn: '233241234567',
-  payerMessage: 'Mobile money deposit',
-  payeeNote: 'Deposit to wallet'
-}
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-🔍 MTN API status check: TXN-1757708913712
-✅ Health check requested
-💰 MTN API request-to-pay: {
-  amount: '100.00',
-  currency: 'EUR',
-  payerMsisdn: '233241234567',
-  payerMessage: 'Mobile money deposit',
-  payeeNote: 'Deposit to wallet'
-}
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
-🔍 MTN API status check: TXN-1757709005410
+🔍 MTN API status check: TXN-1757882138835
+🔍 MTN API status check: TXN-1757882138835
+🔍 MTN API status check: TXN-1757882138835

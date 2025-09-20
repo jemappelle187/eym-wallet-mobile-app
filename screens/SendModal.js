@@ -136,8 +136,8 @@ const SendModal = ({ visible, onClose, currentCurrency, currentBalance, onCurren
     const numValue = parseFloat(text);
     if (text && (isNaN(numValue) || numValue <= 0)) {
       setAmountError('Please enter a valid amount');
-    } else if (text && numValue > 10000) {
-      setAmountError('Maximum amount is 10,000');
+    } else if (text && numValue > 50000) {
+      setAmountError('Maximum amount is 50,000');
     } else {
       setAmountError('');
     }

@@ -15,7 +15,7 @@ import { Typography } from '../constants/Typography';
 const AmountInput = ({ 
   currency = { code: 'USD', symbol: '$', name: 'US Dollar' },
   onAmountChange,
-  maxAmount = 10000,
+  maxAmount = 50000,
   showFeeCalculation = true,
 }) => {
   const [amount, setAmount] = useState('');

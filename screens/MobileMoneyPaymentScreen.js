@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, Keyboard, Animated } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, StatusBar, Keyboard, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // Removed expo-network import - using basic fetch test instead
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -217,6 +218,9 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     if (baseCurrency === 'USD') {
       return Number(amount || 0).toFixed(2);
     }
+    if (baseCurrency === 'GHS') {
+      return Number(amount || 0).toFixed(2);
+    }
     return Number(quote?.targetAmount || 0).toFixed(2);
   };
 
@@ -315,7 +319,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
       } catch (error) {
         console.log('Using fallback providers');
         providers = [
-          { id: 'mtn', name: 'MTN Mobile Money', country: 'GH', currency: 'GHS', logo: '📱' }
+          { id: 'mtn', name: 'MTN Mobile Money', country: 'GH', currency: selectedCurrency || 'GHS', logo: '📱' }
         ];
       }
       setAvailableProviders(providers);
@@ -341,11 +345,11 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
           id: 'mtn',
           name: 'MTN Mobile Money',
           country: 'GH',
-          currency: 'GHS',
+          currency: selectedCurrency || 'GHS',
           logo: '📱',
           limits: {
             minAmount: 1,
-            maxAmount: 10000
+            maxAmount: 50000
           }
         };
         setSelectedProvider(fallbackProvider);
@@ -997,28 +1001,23 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
     return (
     <View style={styles.darkContainer}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-              <SafeAreaView style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => onClose ? onClose() : navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#ffffff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+      <SafeAreaView style={styles.safeArea} />
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => onClose ? onClose() : navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
           {isDeposit ? 'Add via Mobile Money' : 'Send Money via Mobile Money'}
-          </Text>
-          <View style={styles.placeholder} />
-        </SafeAreaView>
+        </Text>
+      </View>
 
               <KeyboardAvoidingView
           style={styles.container}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-          >
             {/* Test Account Status Banner */}
             {testAccountStatus && !testAccountStatus.configured && (
               <View style={styles.testAccountBanner}>
@@ -1126,7 +1125,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                     ? 'Calculating…'
                     : quoteErr
                     ? 'FX unavailable'
-                    : quotePreview || (selectedCurrencyObj?.code || selectedCurrency) === 'EUR' || (selectedCurrencyObj?.code || selectedCurrency) === 'USD'
+                    : quotePreview || (selectedCurrencyObj?.code || selectedCurrency) === 'EUR' || (selectedCurrencyObj?.code || selectedCurrency) === 'USD' || (selectedCurrencyObj?.code || selectedCurrency) === 'GHS'
                     ? `= ${getFxPreviewAmount(quotePreview, selectedCurrencyObj?.code || selectedCurrency, localAmount)} ${computeStablecoin(selectedCurrencyObj?.code || selectedCurrency || 'USD')}`
                     : ''}
                 </Text>
@@ -1370,7 +1369,7 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
                   
                   try {
                     // Navigate to confirmation screen
-                    navigation.replace('MobileMoneyConfirm', {
+                    navigation.push('MobileMoneyConfirm', {
                       amount,
                       selectedCurrency,
                       selectedProvider,
@@ -1399,7 +1398,6 @@ const MobileMoneyPaymentScreen = ({ navigation, route, onClose, onDepositSuccess
               </TouchableOpacity>
 
             </View>
-          </ScrollView>
         </KeyboardAvoidingView>
 
         {/* Provider Dropdown - Outside ScrollView to appear under selector */}
@@ -1530,15 +1528,25 @@ const styles = StyleSheet.create({
   darkBackground: {
     flex: 1,
   },
+  safeArea: {
+    backgroundColor: 'transparent',
+  },
   header: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#000000',
+    zIndex: 10,
   },
   backButton: {
+    position: 'absolute',
+    left: 20,
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -1554,6 +1562,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    paddingTop: 140, // Account for header (top: 60 + paddingVertical: 20 + extra space to clear header)
   },
   scrollView: {
     flex: 1,
@@ -1607,6 +1616,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+    zIndex: 20, // Higher than header zIndex: 10
   },
   sectionTitle: {
     fontSize: 18,
@@ -1629,6 +1639,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    zIndex: 20, // Higher than header zIndex: 10
   },
   selectedProvider: {
     flexDirection: 'row',

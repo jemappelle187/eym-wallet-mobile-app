@@ -48,3 +48,9 @@ echo "5. If still failing, check:"
 echo "   • macOS Firewall: System Settings → Network → Firewall"
 echo "   • Server binding: Should bind to 0.0.0.0:4000, not 127.0.0.1:4000"
 echo "   • Docker: Use -p 4000:4000 and bind to 0.0.0.0 inside container"
+
+
+
+
+
+

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Platform, SafeAreaView, ActivityIndicator, ScrollView, Modal, Alert, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, StatusBar, Animated } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Platform, ActivityIndicator, ScrollView, Modal, Alert, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, StatusBar, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { CardField, useStripe } from '@stripe/stripe-react-native';
 import { Colors } from '../constants/Colors';
@@ -207,8 +208,8 @@ const DepositScreen = ({ navigation, isModal, onClose, onDepositConfirmed }) => 
       setAmountError('Minimum deposit amount is 1');
       return false;
     }
-    if (numValue > 10000) {
-      setAmountError('Maximum deposit amount is 10,000');
+    if (numValue > 50000) {
+      setAmountError('Maximum deposit amount is 50,000');
       return false;
     }
     return true;
@@ -447,7 +448,7 @@ const DepositScreen = ({ navigation, isModal, onClose, onDepositConfirmed }) => 
     if (method?.id === 'card' || method?.id === 'bank' || method?.id === 'mobile_money' || method?.id === 'ideal') {
       if (method?.id === 'mobile_money') {
         // Navigate to dedicated mobile money payment screen
-        navigation.navigate('MobileMoneyPayment', {
+        navigation.replace('MobileMoneyPayment', {
           initialAmount: parseFloat(amount),
           initialCurrency: selectedCurrency.code,
           initialProvider: 'mtn'
@@ -1115,8 +1116,9 @@ const DepositScreen = ({ navigation, isModal, onClose, onDepositConfirmed }) => 
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }} edges={['top', 'left', 'right']}>
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <SafeAreaView style={styles.safeArea} />
       {/* Premium Gradient Header */}
       <LinearGradient
         colors={Colors.gradientPrimary}
@@ -1215,14 +1217,13 @@ const DepositScreen = ({ navigation, isModal, onClose, onDepositConfirmed }) => 
           </View>
         </LinearGradient>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
@@ -1242,19 +1243,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? 20 : 10,
-    paddingBottom: 18,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   backButton: {
     padding: 5,
   },
   headerTitle: {
-    ...Typography.h2,
-    color: Colors.textInverse,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0.2,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#ffffff',
+    fontFamily: Typography.fontFamily,
   },
   contentContainer: {
     padding: 20,

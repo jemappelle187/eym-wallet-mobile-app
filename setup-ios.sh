@@ -66,3 +66,10 @@ echo ""
 echo "🔄 To restart Metro: kill $METRO_PID && EXPO_PUBLIC_API_BASE=http://192.168.178.174:4000 npx expo start --clear"
 echo "🛑 To stop Metro: kill $METRO_PID"
 
+
+
+
+
+
+
+

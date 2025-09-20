@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, SafeAreaView, ScrollView, ActivityIndicator, Animated, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, ActivityIndicator, Animated, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import mtnApiService from '../services/mtnApi';
 import StepBar from '../components/progress/StepBar';
+import { Typography } from '../constants/Typography';
 
 const MobileMoneyConfirmScreen = ({ navigation, route }) => {
-  console.log('🎯 MobileMoneyConfirmScreen mounted!', route.params);
+  // Only log in development mode to reduce console noise
+  if (__DEV__) {
+    console.log('🎯 MobileMoneyConfirmScreen mounted!', route.params);
+  }
   
   const { 
     amount, 
@@ -32,20 +37,12 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
   // Calculate converted amount based on auto-conversion logic
   const getConvertedAmount = () => {
     if (!amount || !selectedCurrency) return { amount: '0.00', currency: 'USDC' };
-    
-    const rate = exchangeRates[selectedCurrency]?.USDC || 1;
-    const convertedAmount = (Number(amount) * rate).toFixed(2);
-    
     // Auto-conversion logic: EUR → EURC, everything else → USDC
     const targetCurrency = selectedCurrency === 'EUR' ? 'EURC' : 'USDC';
-    const targetRate = selectedCurrency === 'EUR' ? 
-      (exchangeRates[selectedCurrency]?.EURC || 1) : 
-      (exchangeRates[selectedCurrency]?.USDC || 1);
-    
-    const finalAmount = selectedCurrency === 'EUR' ? 
-      (Number(amount) * targetRate).toFixed(2) : 
-      (Number(amount) * targetRate).toFixed(2);
-    
+    const targetRate = selectedCurrency === 'EUR'
+      ? (exchangeRates[selectedCurrency]?.EURC || 1)
+      : (exchangeRates[selectedCurrency]?.USDC || 1);
+    const finalAmount = (Number(amount) * Number(targetRate || 1)).toFixed(2);
     return { amount: finalAmount, currency: targetCurrency };
   };
 
@@ -55,6 +52,7 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
   const [processingMessage, setProcessingMessage] = useState('');
   const [transactionId, setTransactionId] = useState(null);
   const [phase, setPhase] = useState('IDLE'); // IDLE | SUBMIT | PROCESS | COMPLETE | FAILED
+  const [finalized, setFinalized] = useState(false); // ensure conversion is only applied once
   
   // Animation for processing UI fade-in
   const processingFadeAnim = useRef(new Animated.Value(0)).current;
@@ -93,6 +91,48 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
       successFadeAnim.setValue(0);
     }
   }, [processingStep, successFadeAnim]);
+
+  // Persist the conversion to the wallet/backend once MTN confirms SUCCESS
+  const finalizeDeposit = async (referenceId) => {
+    try {
+      if (finalized) return; // guard against multiple calls
+      setFinalized(true);
+
+      const { amount: recvAmount, currency: recvCurrency } = getConvertedAmount();
+      const rate = selectedCurrency === 'EUR'
+        ? (exchangeRates[selectedCurrency]?.EURC ?? 1)
+        : (exchangeRates[selectedCurrency]?.USDC ?? 1);
+
+      console.log('💳 Auto-crediting wallet in stablecoin', {
+        referenceId,
+        from: { amount: Number(amount), currency: selectedCurrency },
+        to: { amount: Number(recvAmount), currency: recvCurrency },
+        rate
+      });
+
+      // Option A: notify previous screen via callback so it can credit the wallet/store
+      if (route.params?.onDepositSuccess) {
+        await route.params.onDepositSuccess({
+          referenceId,
+          from: { amount: Number(amount), currency: selectedCurrency },
+          to: { amount: Number(recvAmount), currency: recvCurrency },
+          rate
+        });
+      }
+
+      // Option B (server-side): call your backend to finalize and credit in stablecoin
+      // await walletApi.credit({
+      //   referenceId,
+      //   fromAmount: Number(amount),
+      //   fromCurrency: selectedCurrency,
+      //   toAmount: Number(recvAmount),
+      //   toCurrency: recvCurrency,
+      //   rate
+      // });
+    } catch (e) {
+      console.error('❌ finalizeDeposit failed', e);
+    }
+  };
 
   const handleConfirm = async () => {
     try {
@@ -203,13 +243,16 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
         if (currentStatus === 'SUCCESS' || currentStatus === 'SUCCESSFUL') {
           clearInterval(pollInterval);
           console.log('🎉 Payment successful!');
-          
+
+          // Apply the auto-conversion to the actual wallet/backend
+          await finalizeDeposit(referenceId);
+
           setPhase('COMPLETE');
           setProcessingStep(3);
           setProcessingMessage('Deposit successful! Your transaction has been completed.');
-          
+
           // Success message is now shown inline with "Done" button for user control
-          
+
         } else if (currentStatus === 'FAILED' || currentStatus === 'REJECTED' || currentStatus === 'CANCELLED') {
           clearInterval(pollInterval);
           setPhase('FAILED');
@@ -301,9 +344,10 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
   return (
     <View style={styles.darkContainer}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <SafeAreaView style={styles.safeArea} />
       
       {/* Header */}
-      <SafeAreaView style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={[styles.backButton, isProcessing && styles.processingBackButton]}
           onPress={handleBack}
@@ -316,14 +360,9 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
             {isDeposit ? 'Confirm Deposit' : 'Confirm Payment'}
           </Text>
         )}
-        <View style={styles.placeholder} />
-      </SafeAreaView>
+      </View>
 
-      <ScrollView 
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
+       <View style={styles.container}>
         {/* Amount Display */}
         <View style={styles.amountSection}>
           <Text style={styles.amountText}>
@@ -375,6 +414,15 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
               <Text style={styles.detailLabel}>Fees</Text>
               <Text style={styles.detailValue}>
                 {formatAmount(fees, selectedCurrency)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>You'll receive</Text>
+              <Text style={styles.detailValue}>
+                {(() => {
+                  const { amount: recvAmount, currency: recvCurrency } = getConvertedAmount();
+                  return `${recvAmount} ${recvCurrency}`;
+                })()}
               </Text>
             </View>
 
@@ -467,9 +515,17 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
         {!isProcessing && (
           <View style={styles.rateSection}>
             <View style={styles.rateContainer}>
-              <Text style={styles.rateText}>
-                Rate {selectedCurrency} → {selectedCurrency === 'EUR' ? 'EURC' : selectedCurrency === 'USD' ? 'USDC' : selectedCurrency} · 1.0000
-              </Text>
+              {(() => {
+                const target = selectedCurrency === 'EUR' ? 'EURC' : 'USDC';
+                const rate = selectedCurrency === 'EUR'
+                  ? (exchangeRates[selectedCurrency]?.EURC ?? 1)
+                  : (exchangeRates[selectedCurrency]?.USDC ?? 1);
+                return (
+                  <Text style={styles.rateText}>
+                    Rate {selectedCurrency} → {target} · {Number(rate).toFixed(4)}
+                  </Text>
+                );
+              })()}
             </View>
           </View>
         )}
@@ -522,7 +578,7 @@ const MobileMoneyConfirmScreen = ({ navigation, route }) => {
             </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -532,15 +588,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  safeArea: {
+    backgroundColor: '#000000',
+  },
   header: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#000000',
+    zIndex: 10,
   },
   backButton: {
+    position: 'absolute',
+    left: 20,
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -552,13 +618,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#ffffff',
-    fontFamily: 'Montserrat',
+    fontFamily: Typography.fontFamily,
   },
   placeholder: {
     width: 40,
   },
   container: {
     flex: 1,
+    paddingTop: 140, // Account for header (top: 60 + paddingVertical: 20 + extra space to clear header)
   },
   contentContainer: {
     paddingHorizontal: 20,

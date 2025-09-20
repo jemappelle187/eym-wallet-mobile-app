@@ -220,7 +220,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
       <View style={styles.container}>
         {/* Enhanced Background blur with premium glass effect */}
       <BlurView
-          intensity={150}
+          intensity={10}
         tint="light"
         style={{
           position: 'absolute',
@@ -234,7 +234,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
       >
           {/* Premium gradient overlay with multiple layers for glass effect */}
         <LinearGradient
-            colors={[colors.cardBackground + '33', colors.cardBackground + '2A', colors.cardBackground + '1F', colors.cardBackground + '1A']}
+            colors={[colors.cardBackground + 'CC', colors.cardBackground + 'B3', colors.cardBackground + '99', colors.cardBackground + '80']}
           style={{
             position: 'absolute',
             top: 0,
@@ -247,7 +247,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
         
         {/* Subtle inner highlight for glass depth */}
         <LinearGradient
-            colors={[colors.cardBackground + '1A', colors.cardBackground + '14', colors.cardBackground + '00']}
+            colors={[colors.cardBackground + '4D', colors.cardBackground + '33', colors.cardBackground + '00']}
           style={{
             position: 'absolute',
             top: 0,
@@ -260,7 +260,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
         
         {/* Additional glass layer for more depth */}
         <LinearGradient
-            colors={[colors.cardBackground + '0D', colors.cardBackground + '0A', colors.cardBackground + '00']}
+            colors={[colors.cardBackground + '33', colors.cardBackground + '26', colors.cardBackground + '00']}
           style={{
             position: 'absolute',
             top: '40%',
@@ -274,7 +274,7 @@ const PremiumTabBar = ({ state, descriptors, navigation, tabBarStyle }) => {
 
         {/* Enhanced border gradient with premium effect and glow */}
       <LinearGradient
-          colors={[colors.cardBackground + '26', colors.cardBackground + '1A', colors.cardBackground + '14', colors.cardBackground + '0D']}
+          colors={[colors.cardBackground + '99', colors.cardBackground + '66', colors.cardBackground + '4D', colors.cardBackground + '33']}
         style={{
           position: 'absolute',
           top: 0,

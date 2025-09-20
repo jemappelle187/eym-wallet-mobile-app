@@ -9,10 +9,9 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Rect, Text as SvgText } from 'react-native-svg';

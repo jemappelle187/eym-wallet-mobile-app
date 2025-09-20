@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
+  View, Text, StyleSheet, TouchableOpacity,
   Animated, ScrollView, StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -611,5 +612,10 @@ const styles = StyleSheet.create({
 });
 
 export default ProgressBarDemoScreen;
+
+
+
+
+
 
 

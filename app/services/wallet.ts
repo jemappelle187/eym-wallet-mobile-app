@@ -1,21 +1,25 @@
-import { apiGet, apiPost, getFxQuote, type FxQuote } from "../config/api";
+import { API_BASE } from '../config/api';
 
-export function deposit(userId: string, currency: "USD" | "EUR" | "GHS", amount: number, reference?: string) {
-  return apiPost("/v1/deposits/webhook", { userId, currency, amount, reference });
+function joinUrl(base: string, path: string) {
+  const b = (base || '').replace(/\/+$/, '');      // trim trailing /
+  const p = (path || '').replace(/^\/+/, '');      // trim leading /
+  return `${b}/${p}`;
 }
 
-export function getBalance(userId: string) {
-  return apiGet(`/v1/users/${encodeURIComponent(userId)}/balance`);
+export async function circleGet(path: string) {
+  const url = joinUrl(API_BASE, path);             // e.g. .../api/circle + wallets
+  console.log('🔎 circleGet URL =>', url);
+  const res = await fetch(url, { method: 'GET' });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Circle GET ${path} failed: ${res.status} ${text.slice(0,120)}`);
+  }
+  try { return JSON.parse(text); } catch { return text; }
 }
 
-export function ping() {
-  return apiGet("/health");
+// cheap auth probe that never mutates state
+export async function testApiConnection() {
+  // use one of these; pick ONE and keep it consistent:
+  // return circleGet('/config/entity/publicKey');
+  return circleGet('/wallets');
 }
-
-export function quote(base: string, target: string, amount: number): Promise<FxQuote> {
-  return getFxQuote(base, target, amount);
-}
-
-
-
-

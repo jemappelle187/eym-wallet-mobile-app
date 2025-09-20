@@ -16,9 +16,8 @@ import SecurityCodeScreen from './screens/SecurityCodeScreen';
 import BiometricSetupScreen from './screens/BiometricSetupScreen';
 import BiometricTestScreen from './screens/BiometricTestScreen';
 import LanguageSelectorScreen from './screens/LanguageSelectorScreen';
-// Removed auto-conversion related screens
-// import AutoHedgingDashboardScreen from './screens/AutoHedgingDashboardScreen';
-// import AutoConvertTestScreen from './app/screens/AutoConvertTestScreen';
+// Auto-hedge related screens
+import AutoHedgingDashboardScreen from './screens/AutoHedgingDashboardScreen';
 import ConnectedBankAccountsScreen from './screens/ConnectedBankAccountsScreen';
 import MobileMoneyPaymentScreen from './screens/MobileMoneyPaymentScreen';
 import MobileMoneyConfirmScreen from './screens/MobileMoneyConfirmScreen';
@@ -28,6 +27,7 @@ import BankTransferConfirmScreen from './screens/BankTransferConfirmScreen';
 import ProgressBarDemoScreen from './screens/ProgressBarDemoScreen';
 import TestAccountSetupScreen from './screens/TestAccountSetupScreen';
 import RemittanceScreen from './screens/RemittanceScreen';
+import TransitionDemoScreen from './screens/TransitionDemoScreen';
 import PremiumTabBar from './components/PremiumTabBar';
 
 // Import missing screens from backup
@@ -100,19 +100,28 @@ const HomeTabNavigator = () => {
         <HomeTabStack.Screen name="BiometricSetup" component={BiometricSetupScreen} />
         <HomeTabStack.Screen name="BiometricTest" component={BiometricTestScreen} />
         <HomeTabStack.Screen name="LanguageSelector" component={LanguageSelectorScreen} />
-        {/** Removed: AutoHedgingDashboard screen */}
         <HomeTabStack.Screen name="ConnectedBankAccounts" component={ConnectedBankAccountsScreen} />
         <HomeTabStack.Screen name="TestAccountSetup" component={TestAccountSetupScreen} />
         <HomeTabStack.Screen name="Remittance" component={RemittanceScreen} />
         <HomeTabStack.Screen 
           name="MobileMoneyPayment" 
           component={MobileMoneyPaymentScreen}
-          options={{ tabBarStyle: { display: 'none' } }}
+          options={{ 
+            tabBarStyle: { display: 'none' },
+            presentation: 'transparentModal',
+            animation: 'fade',
+            animationDuration: 250
+          }}
         />
         <HomeTabStack.Screen 
           name="MobileMoneyConfirm" 
           component={MobileMoneyConfirmScreen}
-          options={{ tabBarStyle: { display: 'none' } }}
+          options={{ 
+            tabBarStyle: { display: 'none' },
+            presentation: 'transparentModal',
+            animation: 'fade',
+            animationDuration: 250
+          }}
         />
         <HomeTabStack.Screen 
           name={ROUTES.BANK_AMOUNT} 
@@ -221,6 +230,16 @@ const RootAppStackNavigator = () => {
       <AppRootStack.Screen 
         name="ProgressBarDemo" 
         component={ProgressBarDemoScreen}
+        options={{ presentation: 'modal' }}
+      />
+      <AppRootStack.Screen 
+        name="AutoHedgingDashboard" 
+        component={AutoHedgingDashboardScreen}
+        options={{ presentation: 'modal' }}
+      />
+      <AppRootStack.Screen 
+        name="TransitionDemo" 
+        component={TransitionDemoScreen}
         options={{ presentation: 'modal' }}
       />
     </AppRootStack.Navigator>

@@ -85,6 +85,7 @@ const ProfileSettingsScreen = ({ navigation }) => {
   const paymentCardsOptions = [
           { id: 'connected_banks', title: 'Connected Bank Accounts', icon: 'business-outline', action: () => navigation.navigate('ConnectedBankAccounts') },
       { id: 'test_accounts', title: 'Test Account Setup', icon: 'settings-outline', action: () => navigation.navigate('TestAccountSetup') },
+    { id: 'auto_hedge', title: 'Auto-Hedge Dashboard', icon: 'trending-up-outline', action: () => navigation.navigate('AutoHedgingDashboard') },
     { id: 'payment_methods', title: 'Payment Methods', icon: 'card-outline', action: () => Alert.alert('Payments', 'Manage payment methods screen coming soon!') },
     { id: 'virtual_cards', title: t('virtualCards'), icon: 'wallet-outline', action: () => Alert.alert('Virtual Cards', 'Virtual cards feature coming soon!') },
     { id: 'transaction_limits', title: t('transactionLimits'), icon: 'swap-horizontal-outline', action: () => Alert.alert('Limits', 'Transaction limits screen coming soon!') },
