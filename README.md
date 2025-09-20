@@ -72,3 +72,5 @@ This will run the app on your physical device or an emulator/simulator.
 -   Currency conversion rates are static and for demonstration.
 -   QR code scanning is simulated.
 -   Illustrations and a custom logo are represented by placeholders or generic icons. 
+### Clean start
+`npm run start:clean` kills Metro, clears caches, and starts fresh.
