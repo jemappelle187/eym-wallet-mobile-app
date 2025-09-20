@@ -1,0 +1,48 @@
+# macOS
+.DS_Store
+
+# Node/React/Expo
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+._*
+
+# Temporary files created by Metro to check the health of the file watcher
+.metro-health-check*
+
+# Environment variables
+.env*
+
+# Editor state
+.cursor/
+.vscode/
+
+# Expo/Metro caches
+.metro-cache/
