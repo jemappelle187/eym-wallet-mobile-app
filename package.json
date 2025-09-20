@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
+    "start:clean": "lsof -ti :8081 | xargs -r kill -9; lsof -ti :8082 | xargs -r kill -9; watchman watch-del-all || true; rm -rf ~/.expo/metrocache ~/.cache/expo; npx expo start -c",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
