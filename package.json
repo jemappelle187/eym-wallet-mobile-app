@@ -18,17 +18,21 @@
     "expo-blur": "^14.1.5",
     "expo-clipboard": "~7.1.5",
     "expo-linear-gradient": "~14.1.5",
+    "expo-local-authentication": "~16.0.5",
+    "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-gesture-handler": "^2.27.1",
     "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.11.1",
-    "expo-secure-store": "~14.2.3",
-    "expo-local-authentication": "~16.0.5"
+    "react-native-screens": "~4.11.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "engine-strict": "true"
 }
